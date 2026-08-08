@@ -1,0 +1,18 @@
+# وابستگی‌ها
+node_modules/
+
+# تنظیمات محرمانه (توکن ربات) — هرگز نباید در گیت‌هاب برود
+.env
+.env.local
+server/.env
+
+# دیتابیس و فایل‌های ساخته‌شده
+server/data/
+*.db
+*.db-wal
+*.db-shm
+
+# لاگ‌ها و فایل‌های سیستمی
+*.log
+.DS_Store
+Thumbs.db

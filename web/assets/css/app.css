@@ -591,6 +591,15 @@ ul { margin: 0; padding: 0; list-style: none; }
 .toast.is-err { background: var(--danger); }
 .toast.is-ok  { background: var(--success); }
 
+/* ---------- ۲۲.۵) آیکون‌ها ---------- */
+.ic { display: block; flex: 0 0 auto; }
+.tab__ico { display: grid; place-items: center; height: 22px; }
+.menu__ar { display: inline-flex; }
+.btn .ic, .service__ico .ic, .pick__ico .ic, .menu__ico .ic { pointer-events: none; }
+.empty__ico .ic, .service__ico .ic { opacity: .95; }
+.service__ico { color: var(--brand); }
+.empty__ico { color: var(--brand); }
+
 /* ---------- ۲۳) کمکی‌ها ---------- */
 .mt-8  { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }

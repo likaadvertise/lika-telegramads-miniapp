@@ -15,21 +15,21 @@ window.Store = (function () {
 
   /* ---------- وضعیت‌های ممکن یک کمپین ---------- */
   const STATUS = {
-    pending:  { label: "در انتظار بررسی", cls: "pending",  icon: "🕐", order: 1 },
-    review:   { label: "در حال بررسی",    cls: "review",   icon: "🔍", order: 2 },
-    approved: { label: "تأیید شده",       cls: "approved", icon: "✅", order: 3 },
-    running:  { label: "در حال اجرا",     cls: "running",  icon: "📡", order: 4 },
-    done:     { label: "پایان‌یافته",      cls: "done",     icon: "🏁", order: 5 },
-    rejected: { label: "نیاز به اصلاح",   cls: "rejected", icon: "⚠️", order: 6 }
+    pending:  { label: "در انتظار بررسی", cls: "pending",  order: 1 },
+    review:   { label: "در حال بررسی",    cls: "review",   order: 2 },
+    approved: { label: "تأیید شده",       cls: "approved", order: 3 },
+    running:  { label: "در حال اجرا",     cls: "running",  order: 4 },
+    done:     { label: "پایان‌یافته",      cls: "done",     order: 5 },
+    rejected: { label: "نیاز به اصلاح",   cls: "rejected", order: 6 }
   };
 
   /* ---------- مسیر پیشرفت یک کمپین (برای تایم‌لاین) ---------- */
   const FLOW = ["pending", "review", "approved", "running", "done"];
 
   const TARGET_TYPES = {
-    channel: { label: "کانال یا گروه", icon: "📣" },
-    bot:     { label: "ربات تلگرام",   icon: "🤖" },
-    post:    { label: "پست خاص",       icon: "🔗" }
+    channel: { label: "کانال یا گروه", icon: "megaphone" },
+    bot:     { label: "ربات تلگرام",   icon: "bot" },
+    post:    { label: "پست خاص",       icon: "link" }
   };
 
   /* ---------- خواندن / نوشتن ---------- */
@@ -119,7 +119,7 @@ window.Store = (function () {
         status: "running",
         isSample: true,
         target: { type: "channel", url: "@lika_shop", brand: "لیکا شاپ" },
-        creative: { text: "فروش ویژه لوازم جانبی موبایل با ۳۰٪ تخفیف — همین حالا کانال ما را ببینید.", writtenByUs: false },
+        creative: { text: "فروش ویژه لوازم جانبی موبایل با ۳۰٪ تخفیف — همین حالا کانال ما را ببینید." },
         targeting: { countries: ["IR", "AE"], languages: ["فارسی"], topics: ["shopping", "tech"], channels: [] },
         budget: { amountUsd: 120, cpmUsd: 1.6, startWhen: "asap" },
         notes: "",
@@ -137,7 +137,7 @@ window.Store = (function () {
         status: "pending",
         isSample: true,
         target: { type: "bot", url: "@lika_support_bot", brand: "ربات مشاوره لیکا" },
-        creative: { text: "", writtenByUs: true },
+        creative: { text: "مشاورهٔ رایگان سرمایه‌گذاری برای شروع‌کننده‌ها — همین حالا با ربات ما گفت‌وگو کنید." },
         targeting: { countries: ["IR"], languages: ["فارسی"], topics: ["finance", "education"], channels: ["@digikala_jobs"] },
         budget: { amountUsd: 30, cpmUsd: 1.2, startWhen: "week" },
         notes: "کسب‌وکار ما مشاوره مالی و سرمایه‌گذاری برای افراد تازه‌کار است. مخاطب هدف: افراد ۲۵ تا ۴۰ سال.",

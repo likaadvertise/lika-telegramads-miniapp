@@ -41,30 +41,30 @@ window.LIKA_CONFIG = {
 
   /* ---------- داده‌های هدف‌گیری ---------- */
   countries: [
-    { code: "IR", name: "ایران", flag: "🇮🇷" },
-    { code: "AE", name: "امارات", flag: "🇦🇪" },
-    { code: "TR", name: "ترکیه", flag: "🇹🇷" },
-    { code: "IQ", name: "عراق", flag: "🇮🇶" },
-    { code: "AF", name: "افغانستان", flag: "🇦🇫" },
-    { code: "SA", name: "عربستان", flag: "🇸🇦" },
-    { code: "QA", name: "قطر", flag: "🇶🇦" },
-    { code: "KW", name: "کویت", flag: "🇰🇼" },
-    { code: "OM", name: "عمان", flag: "🇴🇲" },
-    { code: "DE", name: "آلمان", flag: "🇩🇪" },
-    { code: "US", name: "آمریکا", flag: "🇺🇸" },
-    { code: "CA", name: "کانادا", flag: "🇨🇦" },
-    { code: "GB", name: "انگلستان", flag: "🇬🇧" },
-    { code: "RU", name: "روسیه", flag: "🇷🇺" },
-    { code: "FR", name: "فرانسه", flag: "🇫🇷" },
-    { code: "IT", name: "ایتالیا", flag: "🇮🇹" },
-    { code: "NL", name: "هلند", flag: "🇳🇱" },
-    { code: "SE", name: "سوئد", flag: "🇸🇪" },
-    { code: "AU", name: "استرالیا", flag: "🇦🇺" },
-    { code: "IN", name: "هند", flag: "🇮🇳" },
-    { code: "PK", name: "پاکستان", flag: "🇵🇰" },
-    { code: "MY", name: "مالزی", flag: "🇲🇾" },
-    { code: "AZ", name: "آذربایجان", flag: "🇦🇿" },
-    { code: "AM", name: "ارمنستان", flag: "🇦🇲" }
+    { code: "IR", name: "ایران" },
+    { code: "AE", name: "امارات" },
+    { code: "TR", name: "ترکیه" },
+    { code: "IQ", name: "عراق" },
+    { code: "AF", name: "افغانستان" },
+    { code: "SA", name: "عربستان" },
+    { code: "QA", name: "قطر" },
+    { code: "KW", name: "کویت" },
+    { code: "OM", name: "عمان" },
+    { code: "DE", name: "آلمان" },
+    { code: "US", name: "آمریکا" },
+    { code: "CA", name: "کانادا" },
+    { code: "GB", name: "انگلستان" },
+    { code: "RU", name: "روسیه" },
+    { code: "FR", name: "فرانسه" },
+    { code: "IT", name: "ایتالیا" },
+    { code: "NL", name: "هلند" },
+    { code: "SE", name: "سوئد" },
+    { code: "AU", name: "استرالیا" },
+    { code: "IN", name: "هند" },
+    { code: "PK", name: "پاکستان" },
+    { code: "MY", name: "مالزی" },
+    { code: "AZ", name: "آذربایجان" },
+    { code: "AM", name: "ارمنستان" }
   ],
 
   languages: [
@@ -73,24 +73,24 @@ window.LIKA_CONFIG = {
   ],
 
   topics: [
-    { id: "crypto",    name: "ارز دیجیتال",     icon: "₿" },
-    { id: "finance",   name: "مالی و اقتصاد",    icon: "📈" },
-    { id: "tech",      name: "تکنولوژی",        icon: "💻" },
-    { id: "shopping",  name: "فروشگاه و خرید",  icon: "🛍" },
-    { id: "education", name: "آموزش",           icon: "🎓" },
-    { id: "health",    name: "سلامت و پزشکی",   icon: "🩺" },
-    { id: "sport",     name: "ورزش",            icon: "⚽️" },
-    { id: "travel",    name: "سفر و گردشگری",   icon: "✈️" },
-    { id: "auto",      name: "خودرو",           icon: "🚗" },
-    { id: "fun",       name: "سرگرمی",          icon: "🎬" },
-    { id: "news",      name: "اخبار",           icon: "📰" },
-    { id: "music",     name: "موسیقی",          icon: "🎵" },
-    { id: "game",      name: "بازی",            icon: "🎮" },
-    { id: "beauty",    name: "مد و زیبایی",     icon: "💅" },
-    { id: "estate",    name: "املاک",           icon: "🏠" },
-    { id: "job",       name: "استخدام",         icon: "💼" },
-    { id: "design",    name: "هنر و طراحی",     icon: "🎨" },
-    { id: "book",      name: "کتاب",            icon: "📚" }
+    { id: "crypto",    name: "ارز دیجیتال" },
+    { id: "finance",   name: "مالی و اقتصاد" },
+    { id: "tech",      name: "تکنولوژی" },
+    { id: "shopping",  name: "فروشگاه و خرید" },
+    { id: "education", name: "آموزش" },
+    { id: "health",    name: "سلامت و پزشکی" },
+    { id: "sport",     name: "ورزش" },
+    { id: "travel",    name: "سفر و گردشگری" },
+    { id: "auto",      name: "خودرو" },
+    { id: "fun",       name: "سرگرمی" },
+    { id: "news",      name: "اخبار" },
+    { id: "music",     name: "موسیقی" },
+    { id: "game",      name: "بازی" },
+    { id: "beauty",    name: "مد و زیبایی" },
+    { id: "estate",    name: "املاک" },
+    { id: "job",       name: "استخدام" },
+    { id: "design",    name: "هنر و طراحی" },
+    { id: "book",      name: "کتاب" }
   ],
 
   /* ---------- قوانین تبلیغات (خلاصه برای نمایش به مشتری) ---------- */
@@ -134,10 +134,9 @@ window.LIKA_CONFIG = {
 
   /* ---------- خدمات ---------- */
   services: [
-    { icon: "🚀", title: "اجرای کمپین Telegram Ads", desc: "راه‌اندازی کامل تبلیغ در پلتفرم رسمی تلگرام" },
-    { icon: "🎯", title: "مشاوره و استراتژی", desc: "انتخاب مخاطب، کشور و موضوع درست برای کسب‌وکار شما" },
-    { icon: "✍️", title: "نگارش متن تبلیغ", desc: "نوشتن متن جذاب و مطابق قوانین تلگرام" },
-    { icon: "📊", title: "گزارش عملکرد", desc: "ارائهٔ آمار بازدید و کلیک در طول اجرای کمپین" }
+    { icon: "send",   title: "اجرای کمپین Telegram Ads", desc: "راه‌اندازی کامل تبلیغ در پلتفرم رسمی تلگرام" },
+    { icon: "target", title: "مشاوره و استراتژی", desc: "انتخاب مخاطب، کشور و موضوع درست برای کسب‌وکار شما" },
+    { icon: "pulse",  title: "گزارش عملکرد", desc: "ارائهٔ آمار بازدید و کلیک در طول اجرای کمپین" }
   ],
 
   /* ---------- حالت نمایشی ---------- */

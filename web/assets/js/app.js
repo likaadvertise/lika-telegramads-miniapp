@@ -12,6 +12,7 @@
 
   const CFG = window.LIKA_CONFIG;
   const S = window.Store;
+  const ICON = window.Icons.icon;
 
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
@@ -145,10 +146,10 @@
      ======================================================= */
 
   const TABS = [
-    { route: "/",          icon: "🏠", label: "خانه" },
-    { route: "/campaigns", icon: "📊", label: "کمپین‌ها" },
-    { route: "/support",   icon: "💬", label: "مشاوره" },
-    { route: "/account",   icon: "👤", label: "حساب من" }
+    { route: "/",          icon: "home",  label: "خانه" },
+    { route: "/campaigns", icon: "chart", label: "کمپین‌ها" },
+    { route: "/support",   icon: "chat",  label: "مشاوره" },
+    { route: "/account",   icon: "user",  label: "حساب من" }
   ];
 
   function currentRoute() {
@@ -201,7 +202,7 @@
     elScreen.innerHTML = view.body + (view.sticky || "");
     elTabbar.innerHTML = TABS.map((t) => `
       <button class="tab ${t.route === route ? "is-on" : ""}" data-act="go" data-route="${t.route}">
-        <span class="tab__ico">${t.icon}</span><span>${t.label}</span>
+        <span class="tab__ico">${ICON(t.icon, 22)}</span><span>${t.label}</span>
       </button>`).join("");
 
     window.scrollTo(0, 0);
@@ -210,7 +211,7 @@
 
   function bar(title, sub) {
     return `
-      <button class="iconbtn" data-act="back" aria-label="بازگشت">→</button>
+      <button class="iconbtn" data-act="back" aria-label="بازگشت">${ICON("back")}</button>
       <div class="appbar__title">${esc(title)}${sub ? `<span class="appbar__sub">${esc(sub)}</span>` : ""}</div>`;
   }
 
@@ -223,7 +224,7 @@
           <div class="brandmark__tag">${esc(CFG.brandTag)}</div>
         </div>
       </div>
-      <button class="iconbtn" data-act="go" data-route="/support" aria-label="پشتیبانی">💬</button>`;
+      <button class="iconbtn" data-act="go" data-route="/support" aria-label="پشتیبانی">${ICON("chat")}</button>`;
   }
 
   /* =======================================================
@@ -240,11 +241,11 @@
       bar: barBrand(),
       body: `
         <section class="hero">
-          <div class="hero__hi">سلام 👋</div>
+          <div class="hero__hi">سلام</div>
           <div class="hero__name">${esc(userName())}</div>
           <p class="hero__desc">تبلیغ خود را در تلگرام اجرا کنید و به میلیون‌ها مخاطب هدفمند برسید.</p>
           <button class="hero__cta" data-act="go" data-route="/new">
-            <span>＋</span><span>ثبت کمپین جدید</span>
+            ${ICON("plus", 18)}<span>ثبت کمپین جدید</span>
           </button>
         </section>
 
@@ -264,7 +265,7 @@
         </section>` : `
         <section class="section">
           <div class="card center">
-            <div class="empty__ico">📣</div>
+            <div class="empty__ico">${ICON("megaphone", 30)}</div>
             <div class="empty__t">هنوز کمپینی ندارید</div>
             <div class="empty__d">در سه دقیقه اولین تبلیغ خود را ثبت کنید.</div>
             <button class="btn btn--primary btn--block mt-16" data-act="go" data-route="/new">شروع کنیم</button>
@@ -276,7 +277,7 @@
           <div class="services">
             ${CFG.services.map((s) => `
               <div class="service">
-                <div class="service__ico">${s.icon}</div>
+                <div class="service__ico">${ICON(s.icon, 20)}</div>
                 <div>
                   <div class="service__t">${esc(s.title)}</div>
                   <div class="service__d">${esc(s.desc)}</div>
@@ -338,14 +339,14 @@
 
     return {
       bar: `<div class="appbar__title">کمپین‌های من<span class="appbar__sub">${num(all.length)} کمپین ثبت شده</span></div>
-            <button class="iconbtn" data-act="go" data-route="/new" aria-label="کمپین جدید">＋</button>`,
+            <button class="iconbtn" data-act="go" data-route="/new" aria-label="کمپین جدید">${ICON("plus")}</button>`,
       body: `
         <div class="tabs">
           ${groups.map((g) => `<button class="chip ${campFilter === g.id ? "is-on" : ""}" data-act="filter" data-val="${g.id}">${g.label}</button>`).join("")}
         </div>
         ${items.length ? items.map(campCard).join("") : `
           <div class="empty">
-            <div class="empty__ico">🗂</div>
+            <div class="empty__ico">${ICON("folder", 30)}</div>
             <div class="empty__t">کمپینی در این بخش نیست</div>
             <div class="empty__d">با ثبت کمپین جدید شروع کنید.</div>
             <button class="btn btn--primary" data-act="go" data-route="/new">ثبت کمپین جدید</button>
@@ -357,7 +358,7 @@
   function viewCampaignDetail(id) {
     const c = S.get(id);
     if (!c) {
-      return { bar: bar("کمپین"), body: `<div class="empty"><div class="empty__ico">❓</div><div class="empty__t">کمپین پیدا نشد</div></div>` };
+      return { bar: bar("کمپین"), body: `<div class="empty"><div class="empty__ico">${ICON("help", 30)}</div><div class="empty__t">کمپین پیدا نشد</div></div>` };
     }
 
     const st = S.STATUS[c.status];
@@ -408,7 +409,7 @@
 
         <div class="section">
           <div class="section__head"><h2 class="section__title">متن تبلیغ</h2></div>
-          ${adPreview(c.target?.brand, c.creative?.text, c.creative?.writtenByUs)}
+          ${adPreview(c.target?.brand, c.creative?.text)}
         </div>
 
         <div class="section">
@@ -429,7 +430,7 @@
         </div>
 
         <div class="section">
-          <button class="btn btn--outline btn--block" data-act="support">💬 گفت‌وگو با کارشناس دربارهٔ این کمپین</button>
+          <button class="btn btn--outline btn--block" data-act="support">${ICON("chat", 18)} گفت‌وگو با کارشناس دربارهٔ این کمپین</button>
         </div>`
     };
   }
@@ -439,7 +440,7 @@
   }
 
   /* ---------- ۴.۵ پیش‌نمایش تبلیغ ---------- */
-  function adPreview(brand, text, byUs) {
+  function adPreview(brand, text) {
     const b = (brand || "نام برند شما").trim();
     const t = (text || "").trim();
     return `
@@ -453,7 +454,7 @@
               <div class="adprev__spon">پیام اسپانسری • Sponsored</div>
             </div>
           </div>
-          <div class="adprev__text ${t ? "" : "adprev__empty"}" id="prevText">${t ? esc(t) : (byUs ? "متن این تبلیغ توسط تیم Lika نوشته می‌شود." : "متن تبلیغ شما اینجا نمایش داده می‌شود…")}</div>
+          <div class="adprev__text ${t ? "" : "adprev__empty"}" id="prevText">${t ? esc(t) : "متن تبلیغ شما اینجا نمایش داده می‌شود…"}</div>
           <div class="adprev__btn">مشاهده کانال</div>
         </div>
       </div>`;
@@ -466,14 +467,14 @@
       body: `
         <div class="card">
           <div class="service" style="border:none;background:transparent;padding:0">
-            <div class="service__ico">🎯</div>
+            <div class="service__ico">${ICON("target", 20)}</div>
             <div>
               <div class="service__t">مشاورهٔ رایگان کمپین</div>
               <div class="service__d">اگر نمی‌دانید چه بودجه و مخاطبی برای کسب‌وکار شما مناسب است، با ما صحبت کنید.</div>
             </div>
           </div>
-          <button class="btn btn--primary btn--block mt-16" data-act="support">💬 گفت‌وگو با کارشناس</button>
-          <button class="btn btn--outline btn--block mt-8" data-act="channel">📣 کانال رسمی ${esc(CFG.brandName)}</button>
+          <button class="btn btn--primary btn--block mt-16" data-act="support">${ICON("chat", 18)} گفت‌وگو با کارشناس</button>
+          <button class="btn btn--outline btn--block mt-8" data-act="channel">${ICON("megaphone", 18)} کانال رسمی ${esc(CFG.brandName)}</button>
         </div>
 
         <section class="section">
@@ -554,16 +555,16 @@
         <section class="section">
           <div class="menu">
             <button class="menu__i" data-act="go" data-route="/campaigns">
-              <span class="menu__ico">📊</span><span>کمپین‌های من</span><span class="menu__ar">←</span>
+              <span class="menu__ico">${ICON("chart", 17)}</span><span>کمپین‌های من</span><span class="menu__ar">${ICON("next", 15)}</span>
             </button>
             <button class="menu__i" data-act="go" data-route="/rules">
-              <span class="menu__ico">📋</span><span>قوانین تبلیغات</span><span class="menu__ar">←</span>
+              <span class="menu__ico">${ICON("doc", 17)}</span><span>قوانین تبلیغات</span><span class="menu__ar">${ICON("next", 15)}</span>
             </button>
             <button class="menu__i" data-act="support">
-              <span class="menu__ico">💬</span><span>پشتیبانی</span><span class="menu__ar">←</span>
+              <span class="menu__ico">${ICON("chat", 17)}</span><span>پشتیبانی</span><span class="menu__ar">${ICON("next", 15)}</span>
             </button>
             <button class="menu__i" data-act="theme">
-              <span class="menu__ico">${dark ? "☀️" : "🌙"}</span><span>حالت ${dark ? "روشن" : "تیره"}</span><span class="menu__ar">←</span>
+              <span class="menu__ico">${ICON(dark ? "sun" : "moon", 17)}</span><span>حالت ${dark ? "روشن" : "تیره"}</span><span class="menu__ar">${ICON("next", 15)}</span>
             </button>
           </div>
         </section>
@@ -571,7 +572,7 @@
         <section class="section">
           <div class="menu">
             <button class="menu__i menu__i--danger" data-act="clear-samples">
-              <span class="menu__ico">🧹</span><span>پاک کردن کمپین‌های نمونه</span><span class="menu__ar">←</span>
+              <span class="menu__ico">${ICON("trash", 17)}</span><span>پاک کردن کمپین‌های نمونه</span><span class="menu__ar">${ICON("next", 15)}</span>
             </button>
           </div>
           <p class="help center mt-12">نسخهٔ آزمایشی ۰٫۱ — ${esc(CFG.brandName)}</p>
@@ -595,7 +596,7 @@
   function freshData() {
     return {
       target: { type: "channel", url: "", brand: "" },
-      creative: { text: "", writtenByUs: false },
+      creative: { text: "" },
       targeting: { countries: [], languages: [], topics: [], channelsRaw: "" },
       budget: { amountUsd: CFG.minBudget, cpmUsd: CFG.defaultCpm, startWhen: "asap" },
       notes: "",
@@ -638,7 +639,7 @@
       bar: bar("ثبت کمپین جدید", "مرحله " + num(W.step) + " از " + num(STEP_COUNT)),
       sticky: `
         <div class="stickybar">
-          ${W.step > 1 ? `<button class="btn btn--outline btn--back" data-act="prev" aria-label="مرحله قبل">→</button>` : ""}
+          ${W.step > 1 ? `<button class="btn btn--outline btn--back" data-act="prev" aria-label="مرحله قبل">${ICON("back")}</button>` : ""}
           <button class="btn btn--primary" data-act="next">
             ${W.step === STEP_COUNT ? "ثبت نهایی سفارش" : "مرحله بعد"}
           </button>
@@ -670,7 +671,7 @@
         <div class="picks">
           ${Object.entries(S.TARGET_TYPES).map(([k, v]) => `
             <button class="pick ${d.type === k ? "is-on" : ""}" data-pick="type" data-val="${k}">
-              <span class="pick__ico">${v.icon}</span>
+              <span class="pick__ico">${ICON(v.icon, 19)}</span>
               <span>
                 <span class="pick__t">${v.label}</span>
                 <span class="pick__d">${k === "channel" ? "مخاطب وارد کانال یا گروه شما می‌شود" : k === "bot" ? "مخاطب ربات شما را استارت می‌کند" : "مخاطب یک پست مشخص را می‌بیند"}</span>
@@ -702,34 +703,24 @@
     const len = c.text.length;
     const max = CFG.adTextMaxLength;
     return `
-      <button class="switch ${c.writtenByUs ? "is-on" : ""}" data-switch="writtenByUs">
-        <span class="switch__box">✓</span>
-        <span>
-          <span class="switch__t">متن تبلیغ را تیم Lika بنویسد</span>
-          <span class="switch__d">اگر مطمئن نیستید چه بنویسید، این گزینه را فعال کنید</span>
-        </span>
-      </button>
+      <div class="field">
+        <div class="label">
+          <span>متن تبلیغ <span class="req">*</span></span>
+          <span class="counter ${len > max ? "is-over" : len > max - 30 ? "is-near" : ""}" id="f-count">${num(len)}/${num(max)}</span>
+        </div>
+        <textarea class="textarea ${W.errors.text ? "is-error" : ""}" id="f-text" maxlength="${max + 40}"
+          placeholder="پیشنهاد خود را در یک جملهٔ کوتاه و جذاب بنویسید…">${esc(c.text)}</textarea>
+        ${errOf("text")}
+        <div class="help">سقف مجاز تلگرام ${num(max)} کاراکتر است. متن کوتاه‌تر معمولاً کلیک بیشتری می‌گیرد.</div>
+      </div>
 
-      ${c.writtenByUs ? `
-        <div class="field">
-          <div class="label"><span>کسب‌وکار و پیشنهاد شما چیست؟ <span class="req">*</span></span></div>
-          <textarea class="textarea ${W.errors.notes ? "is-error" : ""}" id="f-notes"
-            placeholder="مثلاً: فروشگاه لوازم جانبی موبایل هستیم، ارسال رایگان داریم و می‌خواهیم عضو کانال جذب کنیم.">${esc(W.data.notes)}</textarea>
-          ${errOf("notes")}
-          <div class="help">هرچه دقیق‌تر توضیح دهید، متن تبلیغ ما بهتر و مؤثرتر خواهد بود.</div>
-        </div>` : `
-        <div class="field">
-          <div class="label">
-            <span>متن تبلیغ <span class="req">*</span></span>
-            <span class="counter ${len > max ? "is-over" : len > max - 30 ? "is-near" : ""}" id="f-count">${num(len)}/${num(max)}</span>
-          </div>
-          <textarea class="textarea ${W.errors.text ? "is-error" : ""}" id="f-text" maxlength="${max + 40}"
-            placeholder="پیشنهاد خود را در یک جملهٔ کوتاه و جذاب بنویسید…">${esc(c.text)}</textarea>
-          ${errOf("text")}
-          <div class="help">سقف مجاز تلگرام ${num(max)} کاراکتر است. متن کوتاه‌تر معمولاً کلیک بیشتری می‌گیرد.</div>
-        </div>`}
+      <div class="field">
+        <div class="label"><span>توضیح برای کارشناس</span><span class="label__hint">اختیاری</span></div>
+        <textarea class="textarea" id="f-notes" style="min-height:84px"
+          placeholder="اگر نکته‌ای دربارهٔ کسب‌وکار یا مخاطب هدفتان هست، اینجا بنویسید.">${esc(W.data.notes)}</textarea>
+      </div>
 
-      <div class="mt-16">${adPreview(W.data.target.brand, c.writtenByUs ? "" : c.text, c.writtenByUs)}</div>`;
+      <div class="mt-16">${adPreview(W.data.target.brand, c.text)}</div>`;
   }
 
   /* --- مرحله ۳: مخاطب --- */
@@ -741,7 +732,7 @@
           <span>کشورها <span class="req">*</span></span>
           <span class="label__hint" id="cnt-countries">${num(t.countries.length)} انتخاب</span>
         </div>
-        <input class="input mt-8" id="f-country-search" placeholder="🔍 جستجوی کشور…" style="margin-bottom:9px" />
+        <input class="input mt-8" id="f-country-search" placeholder="جستجوی کشور…" style="margin-bottom:9px" />
         <div class="chips" id="country-chips">
           ${CFG.countries.map((c) => `
             <button class="chip ${t.countries.includes(c.code) ? "is-on" : ""}"
@@ -834,7 +825,7 @@
     const topics = d.targeting.topics.map(idToTopic).filter(Boolean);
 
     return `
-      ${adPreview(d.target.brand, d.creative.writtenByUs ? "" : d.creative.text, d.creative.writtenByUs)}
+      ${adPreview(d.target.brand, d.creative.text)}
 
       <div class="section">
         <div class="section__head"><h2 class="section__title">خلاصه سفارش</h2></div>
@@ -842,7 +833,6 @@
           ${kv("نوع مقصد", S.TARGET_TYPES[d.target.type].label)}
           ${kv("آدرس مقصد", d.target.url, true)}
           ${kv("برند", d.target.brand)}
-          ${kv("نگارش متن", d.creative.writtenByUs ? "توسط تیم Lika" : "توسط مشتری")}
           ${kv("کشورها", countries.map((c) => c.flag + " " + c.name).join("، "))}
           ${kv("زبان‌ها", d.targeting.languages.join("، ") || "همه")}
           ${kv("موضوعات", topics.map((t) => t.name).join("، "))}
@@ -860,7 +850,7 @@
           <div class="rules">
             ${CFG.adRules.slice(0, 4).map((r) => `<div class="rule"><span class="rule__x">✕</span><span>${esc(r)}</span></div>`).join("")}
           </div>
-          <button class="section__link mt-8" data-act="go" data-route="/rules">مشاهده همه قوانین ←</button>
+          <button class="section__link mt-8" data-act="go" data-route="/rules">مشاهده همه قوانین</button>
         </div>
         <button class="switch mt-12 ${d.accepted ? "is-on" : ""}" data-switch="accepted">
           <span class="switch__box">✓</span>
@@ -956,13 +946,9 @@
     }
 
     if (W.step === 2) {
-      if (d.creative.writtenByUs) {
-        if (d.notes.trim().length < 20) e.notes = "لطفاً کمی بیشتر توضیح دهید (حداقل ۲۰ کاراکتر).";
-      } else {
-        const len = d.creative.text.trim().length;
-        if (len < CFG.adTextMinLength) e.text = "متن تبلیغ خیلی کوتاه است.";
-        else if (len > CFG.adTextMaxLength) e.text = "متن از سقف مجاز تلگرام بیشتر است (" + num(CFG.adTextMaxLength) + " کاراکتر).";
-      }
+      const len = d.creative.text.trim().length;
+      if (len < CFG.adTextMinLength) e.text = "متن تبلیغ خیلی کوتاه است.";
+      else if (len > CFG.adTextMaxLength) e.text = "متن از سقف مجاز تلگرام بیشتر است (" + num(CFG.adTextMaxLength) + " کاراکتر).";
     }
 
     if (W.step === 3) {
@@ -1001,7 +987,7 @@
     const d = W.data;
     const campaign = S.create({
       target: { type: d.target.type, url: d.target.url, brand: d.target.brand.trim() },
-      creative: { text: d.creative.writtenByUs ? "" : d.creative.text.trim(), writtenByUs: d.creative.writtenByUs },
+      creative: { text: d.creative.text.trim() },
       targeting: {
         countries: d.targeting.countries,
         languages: d.targeting.languages,
@@ -1042,7 +1028,7 @@
         </div>
 
         <div class="card card--pad-sm center tiny dim mt-12">
-          ⚠️ در این نسخهٔ آزمایشی سفارش فقط روی گوشی شما ذخیره می‌شود و برای تیم ما ارسال نمی‌گردد.
+          ${ICON("alert", 15)} در این نسخهٔ آزمایشی سفارش فقط روی گوشی شما ذخیره می‌شود و برای تیم ما ارسال نمی‌گردد.
         </div>
 
         <div class="btn-row mt-16">
@@ -1063,7 +1049,7 @@
       "کد سفارش: " + c.id,
       "برند: " + c.target.brand,
       "مقصد (" + S.TARGET_TYPES[c.target.type].label + "): " + c.target.url,
-      "متن: " + (c.creative.writtenByUs ? "نگارش توسط تیم Lika" : c.creative.text),
+      "متن: " + c.creative.text,
       "کشورها: " + (countries || "همه"),
       "زبان‌ها: " + (c.targeting.languages.join("، ") || "همه"),
       "موضوعات: " + (topics || "همه"),
@@ -1107,16 +1093,9 @@
     const sw = ev.target.closest("[data-switch]");
     if (sw) {
       const key = sw.dataset.switch;
-      if (key === "writtenByUs") {
-        W.data.creative.writtenByUs = !W.data.creative.writtenByUs;
-        W.errors = {};
-        saveDraft();
-        render();
-      } else {
-        W.data[key] = !W.data[key];
-        sw.classList.toggle("is-on", W.data[key]);
-        if (W.data[key]) W.errors = {};
-      }
+      W.data[key] = !W.data[key];
+      sw.classList.toggle("is-on", W.data[key]);
+      if (W.data[key]) W.errors = {};
       tgSafe.tap();
       return;
     }
