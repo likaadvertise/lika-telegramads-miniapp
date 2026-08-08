@@ -1,0 +1,50 @@
+# =========================================================
+#  انتشار مینی‌اپ روی GitHub Pages
+#  ---------------------------------------------------------
+#  هر بار که پوشهٔ web تغییر کند، اپ به‌صورت خودکار روی یک
+#  آدرس اینترنتی https منتشر می‌شود.
+#
+#  ⚠️ یک‌بار باید در تنظیمات مخزن فعال شود:
+#     Settings → Pages → Build and deployment → Source: GitHub Actions
+# =========================================================
+
+name: انتشار مینی‌اپ
+
+on:
+  push:
+    branches:
+      - main
+      - claude/telegram-ads-mini-app-fcvsku
+    paths:
+      - "web/**"
+      - ".github/workflows/deploy-webapp.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - name: بارگذاری پوشهٔ web
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+      - name: انتشار
+        id: deployment
+        uses: actions/deploy-pages@v4
