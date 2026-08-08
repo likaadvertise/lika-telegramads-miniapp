@@ -86,9 +86,9 @@ export function webAppButton(text = "باز کردن پنل تبلیغات") {
  * این همان «گزینه‌های» بزرگی است که کاربر همیشه جلوی چشمش دارد.
  */
 export const MENU = {
-  panel: "پنل تبلیغات",
+  panel: "ورود به پنل تبلیغات",
   orders: "سفارش‌های من",
-  support: "راهنما و پشتیبانی"
+  support: "پشتیبانی"
 };
 
 export function mainKeyboard() {

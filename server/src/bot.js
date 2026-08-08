@@ -29,9 +29,7 @@ async function handleMessage(msg) {
 
   if (/^\/start\b/.test(text)) {
     const name = from?.first_name || "دوست عزیز";
-    // اول صفحه‌کلید همیشگی را می‌نشانیم، بعد پیام خوش‌آمد با دکمهٔ بزرگ
     await sendMessage(chatId, welcomeMessage(name), { reply_markup: mainKeyboard() });
-    await sendMessage(chatId, "برای شروع، روی دکمهٔ زیر بزنید:", { reply_markup: webAppButton() });
     return;
   }
 
