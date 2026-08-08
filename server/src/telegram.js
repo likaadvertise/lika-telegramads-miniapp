@@ -76,9 +76,30 @@ export function editMessageText(chatId, messageId, text, extra = {}) {
   });
 }
 
-/** دکمه‌ای که مینی‌اپ را باز می‌کند */
+/** دکمه‌ای که زیر یک پیام می‌آید و مینی‌اپ را باز می‌کند */
 export function webAppButton(text = "باز کردن پنل تبلیغات") {
   return { inline_keyboard: [[{ text, web_app: { url: config.webappUrl } }]] };
+}
+
+/**
+ * صفحه‌کلید همیشگی زیر کادر تایپ.
+ * این همان «گزینه‌های» بزرگی است که کاربر همیشه جلوی چشمش دارد.
+ */
+export const MENU = {
+  panel: "پنل تبلیغات",
+  orders: "سفارش‌های من",
+  support: "راهنما و پشتیبانی"
+};
+
+export function mainKeyboard() {
+  return {
+    keyboard: [
+      [{ text: MENU.panel, web_app: { url: config.webappUrl } }],
+      [{ text: MENU.orders }, { text: MENU.support }]
+    ],
+    resize_keyboard: true,
+    is_persistent: true
+  };
 }
 
 /** تنظیمات اولیهٔ ربات: دستورها و دکمهٔ منو */

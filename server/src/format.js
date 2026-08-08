@@ -30,7 +30,7 @@ function userLine(user) {
 export function adminOrderMessage(campaign, user) {
   const t = campaign.targeting;
   const lines = [
-    `🆕 <b>سفارش جدید</b> — <code>${esc(campaign.id)}</code>`,
+    `<b>سفارش جدید</b> — <code>${esc(campaign.id)}</code>`,
     "",
     `<b>مشتری:</b> ${userLine(user)}`,
     `<b>برند:</b> ${esc(campaign.target.brand)}`,
@@ -113,7 +113,7 @@ export function ordersListMessage(campaigns) {
 /* ---------- پیام خوش‌آمد ---------- */
 export function welcomeMessage(name, brandName = "Lika Ads") {
   return [
-    `سلام ${esc(name)} 👋`,
+    `سلام ${esc(name)}`,
     "",
     `به <b>${esc(brandName)}</b> خوش آمدید — پنل ثبت سفارش تبلیغات رسمی تلگرام.`,
     "",
@@ -122,7 +122,7 @@ export function welcomeMessage(name, brandName = "Lika Ads") {
     "• مخاطب هدف را بر اساس کشور، زبان و موضوع انتخاب کنید",
     "• وضعیت و عملکرد کمپین‌هایتان را دنبال کنید",
     "",
-    "برای شروع، دکمهٔ زیر را بزنید."
+    "دکمهٔ <b>پنل تبلیغات</b> پایین صفحه همیشه در دسترس شماست."
   ].join("\n");
 }
 

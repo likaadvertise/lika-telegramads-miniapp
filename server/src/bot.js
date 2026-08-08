@@ -6,7 +6,7 @@
    ========================================================= */
 
 import { config, isAdmin } from "./config.js";
-import { sendMessage, answerCallback, editMessageText, webAppButton, esc } from "./telegram.js";
+import { sendMessage, answerCallback, editMessageText, webAppButton, mainKeyboard, MENU, esc } from "./telegram.js";
 import { upsertUser, listCampaignsByUser, setCampaignStatus, getCampaignByCode, getUser } from "./db.js";
 import { welcomeMessage, helpMessage, ordersListMessage, customerStatusMessage, adminOrderMessage, adminKeyboard } from "./format.js";
 import { STATUS_LABELS, STATUS_LIST } from "./labels.js";
@@ -29,11 +29,13 @@ async function handleMessage(msg) {
 
   if (/^\/start\b/.test(text)) {
     const name = from?.first_name || "دوست عزیز";
-    await sendMessage(chatId, welcomeMessage(name), { reply_markup: webAppButton() });
+    // اول صفحه‌کلید همیشگی را می‌نشانیم، بعد پیام خوش‌آمد با دکمهٔ بزرگ
+    await sendMessage(chatId, welcomeMessage(name), { reply_markup: mainKeyboard() });
+    await sendMessage(chatId, "برای شروع، روی دکمهٔ زیر بزنید:", { reply_markup: webAppButton() });
     return;
   }
 
-  if (/^\/help\b/.test(text)) {
+  if (/^\/help\b/.test(text) || text === MENU.support) {
     await sendMessage(chatId, helpMessage(""), { reply_markup: webAppButton() });
     return;
   }
@@ -51,7 +53,7 @@ async function handleMessage(msg) {
     return;
   }
 
-  if (/^\/orders\b/.test(text)) {
+  if (/^\/orders\b/.test(text) || text === MENU.orders) {
     const list = listCampaignsByUser(from.id, 20);
     await sendMessage(chatId, ordersListMessage(list), { reply_markup: webAppButton("مشاهده در پنل") });
     return;
@@ -61,7 +63,7 @@ async function handleMessage(msg) {
   await sendMessage(
     chatId,
     "برای ثبت سفارش تبلیغ، پنل تبلیغات را باز کنید.\nراهنما: /help",
-    { reply_markup: webAppButton() }
+    { reply_markup: mainKeyboard() }
   );
 }
 
