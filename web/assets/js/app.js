@@ -228,10 +228,18 @@
       <div class="appbar__title">${esc(title)}${sub ? `<span class="appbar__sub">${esc(sub)}</span>` : ""}</div>`;
   }
 
+  /** لوگوی شرکت؛ اگر تصویری تنظیم نشده باشد، حرف اول برند نمایش داده می‌شود */
+  function brandLogo(cls) {
+    if (CFG.brandLogo) {
+      return `<img class="${cls} ${cls}--img" src="${esc(CFG.brandLogo)}" alt="${esc(CFG.brandName)}" />`;
+    }
+    return `<div class="${cls}">${esc(CFG.brandInitial)}</div>`;
+  }
+
   function barBrand() {
     return `
       <div class="brandmark">
-        <div class="brandmark__logo">${esc(CFG.brandInitial)}</div>
+        ${brandLogo("brandmark__logo")}
         <div>
           <div class="brandmark__name">${esc(CFG.brandName)}</div>
           <div class="brandmark__tag">${esc(CFG.brandTag)}</div>
@@ -269,9 +277,9 @@
         </section>
 
         <div class="stats">
-          <div class="stat stat--brand"><div class="stat__num">${num(sum.total)}</div><div class="stat__lbl">کل کمپین‌ها</div></div>
-          <div class="stat stat--success"><div class="stat__num">${num(sum.active)}</div><div class="stat__lbl">فعال</div></div>
-          <div class="stat stat--warn"><div class="stat__num">${num(sum.waiting)}</div><div class="stat__lbl">در بررسی</div></div>
+          <div class="stat"><div class="stat__num">${num(sum.total)}</div><div class="stat__lbl">کل کمپین‌ها</div></div>
+          <div class="stat"><div class="stat__num">${num(sum.active)}</div><div class="stat__lbl">فعال</div></div>
+          <div class="stat"><div class="stat__num">${num(sum.waiting)}</div><div class="stat__lbl">در بررسی</div></div>
         </div>
 
         ${recent.length ? `
@@ -420,8 +428,8 @@
         <div class="section">
           <div class="section__head"><h2 class="section__title">عملکرد</h2></div>
           <div class="stats">
-            <div class="stat stat--brand"><div class="stat__num">${num(c.stats.views)}</div><div class="stat__lbl">بازدید</div></div>
-            <div class="stat stat--success"><div class="stat__num">${num(c.stats.clicks)}</div><div class="stat__lbl">کلیک</div></div>
+            <div class="stat"><div class="stat__num">${num(c.stats.views)}</div><div class="stat__lbl">بازدید</div></div>
+            <div class="stat"><div class="stat__num">${num(c.stats.clicks)}</div><div class="stat__lbl">کلیک</div></div>
             <div class="stat"><div class="stat__num">${c.stats.views ? num(((c.stats.clicks / c.stats.views) * 100).toFixed(2)) + "٪" : "—"}</div><div class="stat__lbl">نرخ کلیک</div></div>
           </div>
         </div>` : ""}
@@ -566,8 +574,8 @@
             </div>
           </div>
           <div class="stats" style="margin-top:14px">
-            <div class="stat stat--brand"><div class="stat__num">${num(sum.total)}</div><div class="stat__lbl">کمپین</div></div>
-            <div class="stat stat--success"><div class="stat__num">${num(sum.views)}</div><div class="stat__lbl">بازدید</div></div>
+            <div class="stat"><div class="stat__num">${num(sum.total)}</div><div class="stat__lbl">کمپین</div></div>
+            <div class="stat"><div class="stat__num">${num(sum.views)}</div><div class="stat__lbl">بازدید</div></div>
             <div class="stat"><div class="stat__num">${num(sum.spend)}$</div><div class="stat__lbl">هزینه</div></div>
           </div>
         </div>
@@ -827,7 +835,7 @@
     elAppbar.className = "appbar";
     elAppbar.innerHTML = `
       <div class="brandmark">
-        <div class="brandmark__logo">${esc(CFG.brandInitial)}</div>
+        ${brandLogo("brandmark__logo")}
         <div>
           <div class="brandmark__name">${esc(CFG.brandName)}</div>
           <div class="brandmark__tag">${esc(CFG.brandTag)}</div>
