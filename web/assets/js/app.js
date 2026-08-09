@@ -605,8 +605,8 @@
     step: "phone", phone: "", code: "", firstName: "", lastName: "",
     error: "", busy: false, hint: "",
     sentAt: 0,          // زمان ارسال کد
-    expiresIn: 180,     // اعتبار کد (ثانیه)
-    resendIn: 60,       // فاصلهٔ مجاز تا ارسال دوباره (ثانیه)
+    expiresIn: 120,     // اعتبار کد (ثانیه)
+    resendIn: 120,      // فاصلهٔ مجاز تا ارسال دوباره (ثانیه)
     expired: false
   };
 
@@ -817,8 +817,8 @@
           OB.step = "code";
           OB.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "";
           OB.sentAt = Date.now();
-          OB.expiresIn = res.expiresInSeconds || 180;
-          OB.resendIn = res.resendAfterSeconds || 60;
+          OB.expiresIn = res.expiresInSeconds || 120;
+          OB.resendIn = res.resendAfterSeconds || 120;
           OB.expired = false;
         } else {
           OB.step = "profile";
@@ -853,8 +853,8 @@
       const res = await S.registerPhone(OB.phone);
       OB.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "کد دوباره فرستاده شد.";
       OB.sentAt = Date.now();
-      OB.expiresIn = res.expiresInSeconds || 180;
-      OB.resendIn = res.resendAfterSeconds || 60;
+      OB.expiresIn = res.expiresInSeconds || 120;
+      OB.resendIn = res.resendAfterSeconds || 120;
       OB.expired = false;
       OB.code = "";
       toast("کد دوباره فرستاده شد", "ok");

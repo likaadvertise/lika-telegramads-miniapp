@@ -166,8 +166,8 @@ window.Store = (function () {
       if (data.profile) profile = data.profile;
       return {
         codeSent: Boolean(data.codeSent),
-        expiresInSeconds: data.expiresInSeconds || 180,
-        resendAfterSeconds: data.resendAfterSeconds || 60
+        expiresInSeconds: data.expiresInSeconds || 120,
+        resendAfterSeconds: data.resendAfterSeconds || 120
       };
     }
 
@@ -180,8 +180,8 @@ window.Store = (function () {
     return {
       codeSent: requireCode,
       demoCode: requireCode ? DEMO_CODE : null,
-      expiresInSeconds: 180,
-      resendAfterSeconds: 60
+      expiresInSeconds: 120,
+      resendAfterSeconds: 120
     };
   }
 

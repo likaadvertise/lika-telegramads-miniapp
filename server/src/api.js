@@ -15,7 +15,8 @@ import { validateCampaign, normalizePhone, validateName, normalizeCode } from ".
 import {
   upsertUser, createCampaign, listCampaignsByUser,
   getCampaignByCode, summaryForUser, countOrdersToday,
-  issuePhoneCode, checkPhoneCode, completeRegistration, profileOf, setPhoneDirect
+  issuePhoneCode, checkPhoneCode, completeRegistration, profileOf, setPhoneDirect,
+  findUserByPhone
 } from "./db.js";
 import { notifyNewOrder, notifyOrderReceived, sendVerificationCode, notifyNewLead } from "./bot.js";
 
@@ -142,6 +143,16 @@ export async function handleApi(req, res, url) {
     const phone = normalizePhone(body.phone);
     if (!phone.ok) {
       json(res, 400, { ok: false, error: phone.error });
+      return true;
+    }
+
+    // یک شماره نمی‌تواند به دو حساب تلگرام وصل باشد
+    const owner = findUserByPhone(phone.phone);
+    if (owner && Number(owner.id) !== Number(userId)) {
+      json(res, 409, {
+        ok: false,
+        error: "این شماره قبلاً ثبت شده است. اگر شمارهٔ خودتان است، با پشتیبانی تماس بگیرید."
+      });
       return true;
     }
 

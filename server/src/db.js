@@ -141,9 +141,9 @@ export function getUser(id) {
 /* =========================================================
    ثبت‌نام کاربر (شماره تماس + نام)
    ========================================================= */
-const CODE_TTL_MINUTES = 3;
+const CODE_TTL_MINUTES = 2;
 const CODE_MAX_ATTEMPTS = 5;
-const CODE_RESEND_SECONDS = 60;
+const CODE_RESEND_SECONDS = 120;
 
 const qCodeGet = db.prepare("SELECT * FROM phone_codes WHERE user_id = ?");
 const qCodeSet = db.prepare(`
@@ -159,12 +159,18 @@ const qCodeSet = db.prepare(`
 const qCodeAttempt = db.prepare("UPDATE phone_codes SET attempts = attempts + 1 WHERE user_id = ?");
 const qCodeClear = db.prepare("DELETE FROM phone_codes WHERE user_id = ?");
 const qUserSetPhone = db.prepare("UPDATE users SET phone = ? WHERE id = ?");
+const qUserByPhone = db.prepare("SELECT * FROM users WHERE phone = ? LIMIT 1");
 const qUserSetProfile = db.prepare(
   "UPDATE users SET reg_first_name = ?, reg_last_name = ?, registered_at = ? WHERE id = ?"
 );
 
 function hashCode(userId, code) {
   return crypto.createHash("sha256").update(`${userId}:${code}`).digest("hex");
+}
+
+/** کاربری که این شماره را قبلاً ثبت کرده (اگر باشد) */
+export function findUserByPhone(phone) {
+  return qUserByPhone.get(String(phone)) || null;
 }
 
 /** یک کد تصادفی ۵ رقمی می‌سازد و ذخیره می‌کند */
