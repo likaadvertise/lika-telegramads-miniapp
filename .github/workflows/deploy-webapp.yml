@@ -14,7 +14,6 @@ on:
   push:
     branches:
       - main
-      - claude/telegram-ads-mini-app-fcvsku
     paths:
       - "web/**"
       - ".github/workflows/deploy-webapp.yml"
@@ -25,9 +24,10 @@ permissions:
   pages: write
   id-token: write
 
+# انتشارها پشت سر هم اجرا می‌شوند؛ انتشارِ در حال اجرا نباید لغو شود
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
