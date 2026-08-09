@@ -18,9 +18,9 @@ export const STATUS_LABELS = {
 export const STATUS_LIST = Object.keys(STATUS_LABELS);
 
 export const TARGET_LABELS = {
-  channel: "کانال یا گروه",
-  bot: "ربات تلگرام",
-  post: "پست خاص"
+  bot: "ربات",
+  search: "جستجو",
+  channel: "کانال"
 };
 
 export const START_LABELS = {

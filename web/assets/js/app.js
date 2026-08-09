@@ -1030,7 +1030,7 @@
 
   function freshData() {
     return {
-      target: { type: "channel", url: "", brand: "" },
+      target: { type: "", url: "", brand: "" },
       creative: { text: "" },
       targeting: { countries: [], languages: [], topics: [], channelsRaw: "" },
       budget: { amountUsd: CFG.minBudget, cpmUsd: CFG.defaultCpm, startWhen: "asap" },
@@ -1061,7 +1061,7 @@
 
   function viewWizard() {
     const titles = [
-      { t: "مقصد تبلیغ", d: "مخاطب با کلیک روی تبلیغ کجا برود؟" },
+      { t: "نوع تبلیغ", d: "می‌خواهید چه چیزی را تبلیغ کنید؟" },
       { t: "متن تبلیغ", d: "پیامی که مخاطب می‌بیند" },
       { t: "مخاطب هدف", d: "تبلیغ به چه کسانی نشان داده شود؟" },
       { t: "بودجه و نرخ", d: "چقدر می‌خواهید هزینه کنید؟" },
@@ -1097,39 +1097,62 @@
     return W.errors[name] ? `<div class="err">${esc(W.errors[name])}</div>` : "";
   }
 
-  /* --- مرحله ۱: مقصد --- */
+  /** متن‌های فیلد آدرس، بسته به نوع تبلیغ */
+  const TARGET_FIELD = {
+    bot: {
+      label: "آدرس ربات",
+      placeholder: "@my_bot",
+      help: "آیدی رباتی که می‌خواهید مخاطب واردش شود."
+    },
+    search: {
+      label: "مقصد تبلیغ",
+      placeholder: "@my_channel",
+      help: "تبلیغ در نتایج جستجوی تلگرام دیده می‌شود و مخاطب با کلیک به این مقصد می‌رسد."
+    },
+    channel: {
+      label: "آدرس کانال",
+      placeholder: "@my_channel",
+      help: "آیدی کانالی که می‌خواهید مخاطب واردش شود."
+    }
+  };
+
   function stepTarget() {
     const d = W.data.target;
+    const f = TARGET_FIELD[d.type];
+
     return `
       <div class="field">
-        <div class="label">نوع مقصد تبلیغ <span class="req">*</span></div>
+        <div class="label">نوع تبلیغ <span class="req">*</span></div>
         <div class="picks">
           ${Object.entries(S.TARGET_TYPES).map(([k, v]) => `
             <button class="pick ${d.type === k ? "is-on" : ""}" data-pick="type" data-val="${k}">
               <span class="pick__ico">${ICON(v.icon, 19)}</span>
               <span>
-                <span class="pick__t">${v.label}</span>
-                <span class="pick__d">${k === "channel" ? "مخاطب وارد کانال یا گروه شما می‌شود" : k === "bot" ? "مخاطب ربات شما را استارت می‌کند" : "مخاطب یک پست مشخص را می‌بیند"}</span>
+                <span class="pick__t">${esc(v.label)}</span>
+                <span class="pick__d">${esc(v.desc)}</span>
               </span>
               <span class="pick__tick">✓</span>
             </button>`).join("")}
         </div>
+        ${errOf("type")}
       </div>
 
-      <div class="field">
-        <div class="label"><span>آدرس مقصد <span class="req">*</span></span><span class="label__hint">مثال <span dir="ltr">@lika_shop</span></span></div>
-        <input class="input ${W.errors.url ? "is-error" : ""}" id="f-url" dir="ltr" inputmode="url"
-               placeholder="@lika_shop" value="${esc(d.url)}" />
-        ${errOf("url")}
-        <div class="help">مقصد تبلیغ در Telegram Ads فقط می‌تواند کانال، گروه، ربات یا پست تلگرامی باشد؛ لینک سایت پذیرفته نمی‌شود.</div>
-      </div>
+      ${f ? `
+        <div class="field reveal">
+          <div class="label">${esc(f.label)} <span class="req">*</span></div>
+          <input class="input ${W.errors.url ? "is-error" : ""}" id="f-url" dir="ltr" inputmode="url"
+                 placeholder="${esc(f.placeholder)}" value="${esc(d.url)}" />
+          ${errOf("url")}
+          <div class="help">${esc(f.help)}</div>
+        </div>
 
-      <div class="field">
-        <div class="label">نام برند یا کسب‌وکار <span class="req">*</span></div>
-        <input class="input ${W.errors.brand ? "is-error" : ""}" id="f-brand"
-               placeholder="مثلاً: لیکا شاپ" value="${esc(d.brand)}" />
-        ${errOf("brand")}
-      </div>`;
+        <div class="field reveal">
+          <div class="label">نام برند یا کسب‌وکار <span class="req">*</span></div>
+          <input class="input ${W.errors.brand ? "is-error" : ""}" id="f-brand"
+                 placeholder="مثلاً: لیکا شاپ" value="${esc(d.brand)}" />
+          ${errOf("brand")}
+        </div>` : `
+        <p class="ob__note">برای ادامه، یکی از سه گزینهٔ بالا را انتخاب کنید.</p>`}`;
   }
 
   /* --- مرحله ۲: متن --- */
@@ -1373,6 +1396,10 @@
     const e = {};
 
     if (W.step === 1) {
+      if (!d.target.type) {
+        W.errors = { type: "یکی از سه گزینه را انتخاب کنید." };
+        return false;
+      }
       const url = d.target.url;
       const ok = /^@[A-Za-z0-9_]{4,}$/.test(url) || /^(https?:\/\/)?t\.me\/[A-Za-z0-9_+/]{3,}$/i.test(url);
       if (!url) e.url = "آدرس مقصد را وارد کنید.";
@@ -1538,10 +1565,14 @@
 
     const pick = ev.target.closest("[data-pick]");
     if (pick) {
+      const same = W.data.target.type === pick.dataset.val;
       W.data.target.type = pick.dataset.val;
-      $$("[data-pick]").forEach((p) => p.classList.toggle("is-on", p === pick));
+      W.errors = {};
       tgSafe.tap();
       saveDraft();
+      // با اولین انتخاب، فیلدهای بعدی ظاهر می‌شوند
+      if (same) $$("[data-pick]").forEach((p) => p.classList.toggle("is-on", p === pick));
+      else render();
       return;
     }
 

@@ -32,9 +32,9 @@ window.Store = (function () {
   const FLOW = ["pending", "review", "approved", "running", "done"];
 
   const TARGET_TYPES = {
-    channel: { label: "کانال یا گروه", icon: "megaphone" },
-    bot:     { label: "ربات تلگرام",   icon: "bot" },
-    post:    { label: "پست خاص",       icon: "link" }
+    bot:     { label: "ربات",   icon: "bot",       desc: "مخاطب ربات شما را استارت می‌کند" },
+    search:  { label: "جستجو",  icon: "search",    desc: "تبلیغ شما در نتایج جستجوی تلگرام دیده می‌شود" },
+    channel: { label: "کانال",  icon: "megaphone", desc: "مخاطب وارد کانال شما می‌شود" }
   };
 
   /* =======================================================

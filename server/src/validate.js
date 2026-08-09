@@ -8,7 +8,7 @@
 
 import { config } from "./config.js";
 
-const TARGET_TYPES = ["channel", "bot", "post"];
+const TARGET_TYPES = ["bot", "search", "channel"];
 const START_WHEN = ["asap", "week", "custom"];
 
 const URL_PATTERNS = [

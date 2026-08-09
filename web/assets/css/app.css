@@ -355,6 +355,13 @@ ul { margin: 0; padding: 0; list-style: none; }
 .pick__tick { margin-inline-start: auto; color: var(--brand); font-size: 15px; opacity: 0; }
 .pick.is-on .pick__tick { opacity: 1; }
 
+/* فیلدهایی که بعد از انتخاب ظاهر می‌شوند */
+.reveal { animation: reveal .25s ease both; }
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+
 /* ردیف سوئیچ */
 .switch {
   display: flex; align-items: center; gap: 11px;
