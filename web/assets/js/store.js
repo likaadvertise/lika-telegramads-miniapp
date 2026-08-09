@@ -1,12 +1,17 @@
 /* =========================================================
    Lika Ads — لایه داده (Data Layer)
    ---------------------------------------------------------
-   در این مرحله (MVP) داده‌ها روی خودِ گوشی کاربر ذخیره می‌شوند
-   (localStorage). در مرحله بعد فقط همین فایل عوض می‌شود تا
-   داده‌ها به دیتابیس واقعی روی سرور برود؛ بقیه اپ دست‌نخورده می‌ماند.
+   این فایل تصمیم می‌گیرد سفارش‌ها کجا ذخیره شوند:
 
-   ⚠️ توجه: چون هنوز سروری نداریم، سفارش‌ها فقط روی همین دستگاه
-      باقی می‌مانند و به تیم Lika ارسال نمی‌شوند.
+   ۱) حالت «آنلاین» — اگر سرور Lika در دسترس باشد:
+      سفارش‌ها در دیتابیس واقعی ذخیره می‌شوند و برای تیم Lika
+      پیام می‌رود. این حالت اصلی و درست است.
+
+   ۲) حالت «نمایشی» — اگر سروری در دسترس نباشد:
+      همه‌چیز روی گوشی خود کاربر می‌ماند تا اپ قابل نمایش باشد،
+      ولی سفارش واقعاً ثبت نمی‌شود و به کاربر هشدار داده می‌شود.
+
+   بقیهٔ اپ نمی‌داند در کدام حالت است؛ فقط از همین توابع استفاده می‌کند.
    ========================================================= */
 
 window.Store = (function () {
@@ -32,8 +37,141 @@ window.Store = (function () {
     post:    { label: "پست خاص",       icon: "link" }
   };
 
-  /* ---------- خواندن / نوشتن ---------- */
-  function read() {
+  /* =======================================================
+     وضعیت داخلی
+     ======================================================= */
+  let mode = "demo";        // "online" یا "demo"
+  let cache = [];           // کمپین‌ها در حافظه، برای نمایش سریع
+
+  const apiBase = () => (window.LIKA_CONFIG.apiBase || "").replace(/\/+$/, "");
+
+  function initData() {
+    try { return (window.Telegram?.WebApp?.initData) || ""; } catch (e) { return ""; }
+  }
+
+  async function apiFetch(path, options = {}) {
+    const res = await fetch(apiBase() + path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": initData(),
+        ...(options.headers || {})
+      }
+    });
+
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+
+    if (!res.ok || data.ok === false) {
+      const err = new Error(data.error || "ارتباط با سرور برقرار نشد.");
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  /* =======================================================
+     راه‌اندازی — تصمیم‌گیری بین آنلاین و نمایشی
+     ======================================================= */
+  async function init() {
+    // بدون امضای تلگرام سرور ما را نمی‌شناسد؛ پس حالت نمایشی
+    if (!initData()) {
+      mode = "demo";
+      seedSamples();
+      cache = localList();
+      return mode;
+    }
+
+    try {
+      const timeout = AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined;
+      const health = await fetch(apiBase() + "/api/health", { signal: timeout });
+      if (!health.ok) throw new Error("سرور در دسترس نیست");
+
+      const data = await apiFetch("/api/campaigns");
+      cache = data.campaigns || [];
+      mode = "online";
+    } catch (e) {
+      mode = "demo";
+      seedSamples();
+      cache = localList();
+    }
+    return mode;
+  }
+
+  /** تازه‌سازی لیست از سرور (بعد از بازگشت به اپ) */
+  async function refresh() {
+    if (mode !== "online") return;
+    try {
+      const data = await apiFetch("/api/campaigns");
+      cache = data.campaigns || [];
+    } catch (e) { /* لیست قبلی را نگه می‌داریم */ }
+  }
+
+  /* =======================================================
+     خواندن — همیشه از حافظه، پس فوری است
+     ======================================================= */
+  function list() {
+    return cache.slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  function get(id) {
+    return cache.find((c) => c.id === id) || null;
+  }
+
+  function summary() {
+    const all = list();
+    return {
+      total: all.length,
+      active: all.filter((c) => ["approved", "running"].includes(c.status)).length,
+      waiting: all.filter((c) => ["pending", "review"].includes(c.status)).length,
+      spend: all
+        .filter((c) => ["running", "done"].includes(c.status))
+        .reduce((s, c) => s + (c.budget?.amountUsd || 0), 0),
+      views: all.reduce((s, c) => s + (c.stats?.views || 0), 0)
+    };
+  }
+
+  /* =======================================================
+     ثبت سفارش
+     ======================================================= */
+  async function create(payload) {
+    if (mode === "online") {
+      const data = await apiFetch("/api/campaigns", {
+        method: "POST",
+        body: JSON.stringify({ campaign: payload })
+      });
+      cache.unshift(data.campaign);
+      return data.campaign;
+    }
+
+    // حالت نمایشی: فقط روی همین دستگاه
+    const store = localRead();
+    store.counter += 1;
+    const now = new Date().toISOString();
+
+    const campaign = Object.assign(
+      {
+        id: "LK-" + store.counter,
+        createdAt: now,
+        status: "pending",
+        isSample: false,
+        isLocal: true,
+        stats: { views: 0, clicks: 0 },
+        history: [{ status: "pending", at: now }]
+      },
+      payload
+    );
+
+    store.campaigns.push(campaign);
+    localWrite(store);
+    cache = localList();
+    return campaign;
+  }
+
+  /* =======================================================
+     ذخیره‌سازی محلی (فقط برای حالت نمایشی)
+     ======================================================= */
+  function localRead() {
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) return { campaigns: [], counter: 1041 };
@@ -47,50 +185,12 @@ window.Store = (function () {
     }
   }
 
-  function write(data) {
+  function localWrite(data) {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
   }
 
-  /* ---------- عملیات اصلی ---------- */
-  function list() {
-    return read().campaigns.slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  }
-
-  function get(id) {
-    return read().campaigns.find((c) => c.id === id) || null;
-  }
-
-  function create(payload) {
-    const data = read();
-    data.counter += 1;
-    const now = new Date().toISOString();
-
-    const campaign = Object.assign(
-      {
-        id: "LK-" + data.counter,
-        createdAt: now,
-        status: "pending",
-        isSample: false,
-        stats: { views: 0, clicks: 0 },
-        history: [{ status: "pending", at: now }]
-      },
-      payload
-    );
-
-    data.campaigns.push(campaign);
-    write(data);
-    return campaign;
-  }
-
-  function summary() {
-    const all = list();
-    const active = all.filter((c) => ["approved", "running"].includes(c.status)).length;
-    const waiting = all.filter((c) => ["pending", "review"].includes(c.status)).length;
-    const spend = all
-      .filter((c) => ["running", "done"].includes(c.status))
-      .reduce((s, c) => s + (c.budget?.amountUsd || 0), 0);
-    const views = all.reduce((s, c) => s + (c.stats?.views || 0), 0);
-    return { total: all.length, active, waiting, spend, views };
+  function localList() {
+    return localRead().campaigns;
   }
 
   /* ---------- پیش‌نویس (اگر کاربر نیمه‌کاره خارج شد) ---------- */
@@ -104,9 +204,11 @@ window.Store = (function () {
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
   }
 
-  /* ---------- داده نمونه (فقط برای اینکه پنل خالی نباشد) ---------- */
+  /* ---------- داده نمونه (فقط در حالت نمایشی) ---------- */
   function seedSamples() {
-    const data = read();
+    if (!window.LIKA_CONFIG.seedSampleData) return;
+
+    const data = localRead();
     if (data.campaigns.length > 0) return;
 
     const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
@@ -145,23 +247,23 @@ window.Store = (function () {
         history: [{ status: "pending", at: daysAgo(0) }]
       }
     ];
-    write(data);
+    localWrite(data);
   }
 
   function clearSamples() {
-    const data = read();
+    const data = localRead();
     data.campaigns = data.campaigns.filter((c) => !c.isSample);
-    write(data);
-  }
-
-  function clearAll() {
-    try { localStorage.removeItem(KEY); localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    localWrite(data);
+    if (mode !== "online") cache = localList();
   }
 
   return {
     STATUS, FLOW, TARGET_TYPES,
+    init, refresh,
+    get mode() { return mode; },
+    isOnline: () => mode === "online",
     list, get, create, summary,
     saveDraft, loadDraft, clearDraft,
-    seedSamples, clearSamples, clearAll
+    clearSamples
   };
 })();

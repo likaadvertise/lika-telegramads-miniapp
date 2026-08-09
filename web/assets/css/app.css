@@ -591,6 +591,16 @@ ul { margin: 0; padding: 0; list-style: none; }
 .toast.is-err { background: var(--danger); }
 .toast.is-ok  { background: var(--success); }
 
+/* ---------- ۲۲.۴) نوار هشدار ---------- */
+.notice {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 12px; font-weight: 600; line-height: 1.6;
+}
+
 /* ---------- ۲۲.۵) آیکون‌ها ---------- */
 .ic { display: block; flex: 0 0 auto; }
 .tab__ico { display: grid; place-items: center; height: 22px; }

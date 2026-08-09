@@ -240,6 +240,12 @@
       border: false,
       bar: barBrand(),
       body: `
+        ${S.isOnline() ? "" : `
+        <div class="notice">
+          ${ICON("alert", 16)}
+          <span>حالت نمایشی — سفارش‌ها ذخیره نمی‌شوند و به تیم Lika نمی‌رسند.</span>
+        </div>`}
+
         <section class="hero">
           <div class="hero__hi">سلام</div>
           <div class="hero__name">${esc(userName())}</div>
@@ -983,27 +989,44 @@
     submitCampaign();
   }
 
-  function submitCampaign() {
-    const d = W.data;
-    const campaign = S.create({
-      target: { type: d.target.type, url: d.target.url, brand: d.target.brand.trim() },
-      creative: { text: d.creative.text.trim() },
-      targeting: {
-        countries: d.targeting.countries,
-        languages: d.targeting.languages,
-        topics: d.targeting.topics,
-        channels: parseChannels(d.targeting.channelsRaw)
-      },
-      budget: { amountUsd: Number(d.budget.amountUsd), cpmUsd: Number(d.budget.cpmUsd), startWhen: d.budget.startWhen },
-      notes: d.notes.trim()
-    });
+  let submitting = false;
 
-    S.clearDraft();
-    W.data = freshData();
-    W.step = 1;
-    tgSafe.notify("success");
-    tgSafe.closeGuard(false);
-    go("/success/" + campaign.id, true);
+  async function submitCampaign() {
+    if (submitting) return;
+    submitting = true;
+
+    const btn = $('[data-act="next"]');
+    if (btn) { btn.disabled = true; btn.textContent = "در حال ثبت…"; }
+
+    const d = W.data;
+
+    try {
+      const campaign = await S.create({
+        target: { type: d.target.type, url: d.target.url, brand: d.target.brand.trim() },
+        creative: { text: d.creative.text.trim() },
+        targeting: {
+          countries: d.targeting.countries,
+          languages: d.targeting.languages,
+          topics: d.targeting.topics,
+          channels: parseChannels(d.targeting.channelsRaw)
+        },
+        budget: { amountUsd: Number(d.budget.amountUsd), cpmUsd: Number(d.budget.cpmUsd), startWhen: d.budget.startWhen },
+        notes: d.notes.trim()
+      });
+
+      S.clearDraft();
+      W.data = freshData();
+      W.step = 1;
+      tgSafe.notify("success");
+      tgSafe.closeGuard(false);
+      go("/success/" + campaign.id, true);
+    } catch (err) {
+      tgSafe.notify("error");
+      toast(err.message || "ثبت سفارش انجام نشد. دوباره تلاش کنید.", "err");
+      if (btn) { btn.disabled = false; btn.textContent = "ثبت نهایی سفارش"; }
+    } finally {
+      submitting = false;
+    }
   }
 
   /* ---------- صفحه موفقیت ---------- */
@@ -1014,7 +1037,9 @@
         <div class="done-hero">
           <div class="done-hero__ico">✓</div>
           <div class="done-hero__t">سفارش شما ثبت شد</div>
-          <p class="done-hero__d">کارشناسان ${esc(CFG.brandName)} درخواست شما را بررسی می‌کنند و نتیجه را از طریق همین ربات به شما اطلاع می‌دهند.</p>
+          <p class="done-hero__d">${S.isOnline()
+            ? `کارشناسان ${esc(CFG.brandName)} درخواست شما را بررسی می‌کنند و نتیجه را از طریق همین ربات به شما اطلاع می‌دهند.`
+            : "این سفارش فقط برای نمایش ثبت شد."}</p>
           <div class="done-hero__code">${esc(id)}</div>
         </div>
 
@@ -1027,9 +1052,10 @@
           </div>
         </div>
 
+        ${S.isOnline() ? "" : `
         <div class="card card--pad-sm center tiny dim mt-12">
-          ${ICON("alert", 15)} در این نسخهٔ آزمایشی سفارش فقط روی گوشی شما ذخیره می‌شود و برای تیم ما ارسال نمی‌گردد.
-        </div>
+          ${ICON("alert", 15)} حالت نمایشی: این سفارش فقط روی گوشی شما ذخیره شد و برای تیم ما ارسال نشد.
+        </div>`}
 
         <div class="btn-row mt-16">
           <button class="btn btn--outline" data-act="copy" data-val="${esc(id)}">کپی خلاصه سفارش</button>
@@ -1181,6 +1207,22 @@
 
   /* ---------- شروع ---------- */
   tgSafe.init();
-  if (CFG.seedSampleData) S.seedSamples();
-  render();
+
+  (async function boot() {
+    elScreen.innerHTML = `<div class="empty"><div class="empty__ico">${ICON("send", 30)}</div><div class="empty__t">در حال اتصال…</div></div>`;
+    await S.init();
+    render();
+    if (!S.isOnline()) {
+      setTimeout(() => toast("حالت نمایشی — سفارش‌ها ذخیره نمی‌شوند", "err"), 700);
+    }
+  })();
+
+  // وقتی کاربر به اپ برمی‌گردد، لیست را تازه کن
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !S.isOnline()) return;
+    S.refresh().then(() => {
+      const r = currentRoute();
+      if (r === "/" || r === "/campaigns" || r.startsWith("/campaign/")) render();
+    });
+  });
 })();
