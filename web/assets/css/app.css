@@ -15,12 +15,12 @@
   --border:      #e3e7f0;
 
   /* آبی برند Lika Network */
-  --brand:       #2540f2;
-  --brand-2:     #4c63ff;
+  --brand:       #243cf4;
+  --brand-2:     #4358ff;
   --brand-ink:   #ffffff;
-  --brand-soft:  rgba(37, 64, 242, .10);
-  --brand-grad:  linear-gradient(135deg, #2540f2 0%, #3b54ff 55%, #5a73ff 100%);
-  --brand-glow:  rgba(37, 64, 242, .30);
+  --brand-soft:  rgba(36, 60, 244, .10);
+  --brand-grad:  linear-gradient(135deg, #16249e 0%, #1d30cd 55%, #243cf4 100%);
+  --brand-glow:  rgba(29, 48, 205, .32);
 
   --success:     #0ca678;
   --success-soft:rgba(12, 166, 120, .12);
@@ -58,8 +58,8 @@
   --brand:       #7c92ff;
   --brand-2:     #9db0ff;
   --brand-soft:  rgba(124, 146, 255, .15);
-  --brand-grad:  linear-gradient(135deg, #1f37d6 0%, #3450f0 55%, #5570ff 100%);
-  --brand-glow:  rgba(31, 55, 214, .40);
+  --brand-grad:  linear-gradient(135deg, #0f1a6b 0%, #15229c 55%, #1d2fcc 100%);
+  --brand-glow:  rgba(13, 24, 110, .55);
 
   --success:     #2dd4a7;
   --success-soft:rgba(45, 212, 167, .14);
@@ -206,7 +206,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   height: 50px;
   border-radius: 15px;
   background: rgba(255, 255, 255, .96);
-  color: #2540f2;
+  color: #1d30cd;
   font-weight: 800; font-size: 14.5px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform .12s ease;
