@@ -35,6 +35,9 @@ export function adminOrderMessage(campaign, user) {
     `<b>مشتری:</b> ${userLine(user)}`,
     `<b>برند:</b> ${esc(campaign.target.brand)}`,
     `<b>مقصد:</b> ${esc(TARGET_LABELS[campaign.target.type])} — <code>${esc(campaign.target.url)}</code>`,
+    ...(campaign.target.channelTitle
+      ? [`<b>نام مقصد در تلگرام:</b> ${esc(campaign.target.channelTitle)}`]
+      : []),
     "",
     `<b>متن تبلیغ:</b>`,
     `<blockquote>${esc(campaign.creative.text)}</blockquote>`,

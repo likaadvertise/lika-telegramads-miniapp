@@ -103,6 +103,7 @@ ensureColumn("users", "phone", "TEXT NOT NULL DEFAULT ''");
 ensureColumn("users", "reg_first_name", "TEXT NOT NULL DEFAULT ''");
 ensureColumn("users", "reg_last_name", "TEXT NOT NULL DEFAULT ''");
 ensureColumn("users", "registered_at", "TEXT NOT NULL DEFAULT ''");
+ensureColumn("campaigns", "channel_title", "TEXT NOT NULL DEFAULT ''");
 
 const now = () => new Date().toISOString();
 
@@ -264,8 +265,8 @@ const qCampaignInsert = db.prepare(`
     ad_text, written_by_us,
     countries, languages, topics, channels,
     budget_usd, cpm_usd, start_when,
-    notes, created_at, updated_at
-  ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    notes, channel_title, created_at, updated_at
+  ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const qCampaignSetCode = db.prepare("UPDATE campaigns SET code = ? WHERE id = ?");
@@ -308,6 +309,7 @@ export function createCampaign(userId, data) {
     data.cpmUsd,
     data.startWhen,
     data.notes,
+    data.channelTitle || "",
     t,
     t
   );
@@ -376,7 +378,12 @@ function rowToCampaign(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     isSample: false,
-    target: { type: row.target_type, url: row.target_url, brand: row.brand },
+    target: {
+      type: row.target_type,
+      url: row.target_url,
+      brand: row.brand,
+      channelTitle: row.channel_title || ""
+    },
     creative: { text: row.ad_text, writtenByUs: row.written_by_us === 1 },
     targeting: {
       countries: safeParse(row.countries),

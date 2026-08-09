@@ -436,7 +436,11 @@
 
         <div class="section">
           <div class="section__head"><h2 class="section__title">متن تبلیغ</h2></div>
-          ${adPreview(c.target?.brand, c.creative?.text)}
+          ${adPreview({
+            title: c.target?.channelTitle || String(c.target?.url || "").replace(/^@/, ""),
+            text: c.creative?.text,
+            action: adAction(c.target?.type)
+          })}
         </div>
 
         <div class="section">
@@ -467,25 +471,57 @@
   }
 
   /* ---------- ۴.۵ پیش‌نمایش تبلیغ ---------- */
-  function adPreview(brand, text) {
-    const b = (brand || "نام برند شما").trim();
-    const t = (text || "").trim();
+
+  /**
+   * شبیه‌سازی پیام اسپانسری تلگرام.
+   * @param {object} ad
+   * @param {string} ad.title  نام کانال یا ربات مقصد (نه نام برند)
+   * @param {string} ad.text   متن تبلیغ
+   * @param {string} ad.photo  آدرس عکس پروفایل مقصد
+   * @param {string} ad.action متن دکمهٔ پایین
+   */
+  function adPreview(ad) {
+    const title = String(ad.title || "").trim() || "نام کانال شما";
+    const text = String(ad.text || "").trim();
+    const action = ad.action || "مشاهده کانال";
+
+    const avatar = ad.photo
+      ? `<img class="tgad__ava tgad__ava--img" src="${esc(ad.photo)}" alt="" loading="lazy" />`
+      : `<div class="tgad__ava">${esc((title[0] || "L").toUpperCase())}</div>`;
+
     return `
       <div class="adprev">
         <div class="adprev__label">پیش‌نمایش — این چیزی است که مخاطب در تلگرام می‌بیند</div>
-        <div class="adprev__bubble">
-          <div class="adprev__top">
-            <div class="adprev__ava">${esc((b[0] || "L").toUpperCase())}</div>
-            <div>
-              <div class="adprev__name" id="prevName">${esc(b)}</div>
-              <div class="adprev__spon">پیام اسپانسری • Sponsored</div>
-            </div>
+        <div class="tgad">
+          <div class="tgad__head">
+            <span class="tgad__ad">Ad</span>
+            <span class="tgad__what">what's this?</span>
+            <span class="tgad__avawrap" id="prevAva">${avatar}</span>
           </div>
-          <div class="adprev__text ${t ? "" : "adprev__empty"}" id="prevText">${t ? esc(t) : "متن تبلیغ شما اینجا نمایش داده می‌شود…"}</div>
-          <div class="adprev__btn">مشاهده کانال</div>
+          <div class="tgad__title" id="prevName">${esc(title)}</div>
+          <div class="tgad__text ${text ? "" : "is-empty"}" id="prevText">${
+            text ? esc(text) : "متن تبلیغ شما اینجا نمایش داده می‌شود…"
+          }</div>
+          <div class="tgad__btn">${esc(action)}</div>
         </div>
       </div>`;
   }
+
+  /** متن دکمهٔ پایین تبلیغ، بسته به نوع مقصد */
+  function adAction(type) {
+    return type === "bot" ? "شروع ربات" : "مشاهده کانال";
+  }
+
+  /** اطلاعاتی که در پیش‌نمایش نشان داده می‌شود */
+  function previewOf(target, text) {
+    return {
+      title: W.chat.title || String(target.url || "").replace(/^@/, ""),
+      photo: W.chat.photo,
+      text,
+      action: adAction(target.type)
+    };
+  }
+
 
   /* ---------- ۴.۶ مشاوره و پشتیبانی ---------- */
   function viewSupport() {
@@ -1039,12 +1075,13 @@
     };
   }
 
-  const W = { step: 1, data: freshData(), errors: {} };
+  const W = { step: 1, data: freshData(), errors: {}, chat: { title: "", photo: "" } };
 
   function startWizard() {
     const draft = S.loadDraft();
     W.step = 1;
     W.errors = {};
+    W.chat = { title: "", photo: "" };
     if (draft && draft.target) {
       W.data = draft;
       setTimeout(() => toast("پیش‌نویس قبلی شما بازیابی شد"), 400);
@@ -1178,7 +1215,7 @@
           placeholder="اگر نکته‌ای دربارهٔ کسب‌وکار یا مخاطب هدفتان هست، اینجا بنویسید.">${esc(W.data.notes)}</textarea>
       </div>
 
-      <div class="mt-16">${adPreview(W.data.target.brand, c.text)}</div>`;
+      <div class="mt-16">${adPreview(previewOf(W.data.target, c.text))}</div>`;
   }
 
   /* --- مرحله ۳: مخاطب --- */
@@ -1283,7 +1320,7 @@
     const topics = d.targeting.topics.map(idToTopic).filter(Boolean);
 
     return `
-      ${adPreview(d.target.brand, d.creative.text)}
+      ${adPreview(previewOf(d.target, d.creative.text))}
 
       <div class="section">
         <div class="section__head"><h2 class="section__title">خلاصه سفارش</h2></div>
@@ -1334,12 +1371,7 @@
     const on = (id, ev, fn) => { const el = $("#" + id); if (el) el.addEventListener(ev, fn); };
 
     on("f-url", "input", (e) => { W.data.target.url = e.target.value.trim(); saveDraft(); });
-    on("f-brand", "input", (e) => {
-      W.data.target.brand = e.target.value;
-      const p = $("#prevName"); if (p) p.textContent = e.target.value || "نام برند شما";
-      const a = $(".adprev__ava"); if (a) a.textContent = (e.target.value.trim()[0] || "L").toUpperCase();
-      saveDraft();
-    });
+    on("f-brand", "input", (e) => { W.data.target.brand = e.target.value; saveDraft(); });
 
     on("f-text", "input", (e) => {
       const max = CFG.adTextMaxLength;
@@ -1441,8 +1473,21 @@
       return;
     }
     tgSafe.tap();
+
+    // نام و عکس واقعی مقصد را از تلگرام می‌گیریم
+    if (W.step === 1) fetchChatInfo(W.data.target.url);
+
     if (W.step < STEP_COUNT) { W.step++; saveDraft(); render(); return; }
     submitCampaign();
+  }
+
+  /** نام و عکس مقصد را از تلگرام می‌گیرد و پیش‌نمایش را تازه می‌کند */
+  async function fetchChatInfo(url) {
+    const info = await S.lookupChat(url);
+    if (!info.found) return;
+
+    W.chat = { title: info.title, photo: info.photo };
+    if (currentRoute() === "/new" && (W.step === 2 || W.step === 5)) render();
   }
 
   let submitting = false;

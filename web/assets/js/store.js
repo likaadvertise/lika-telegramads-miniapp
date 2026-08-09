@@ -154,6 +154,40 @@ window.Store = (function () {
   }
 
   /* =======================================================
+     نام و عکس مقصد (برای پیش‌نمایش تبلیغ)
+     ======================================================= */
+
+  const chatCache = new Map();
+
+  /**
+   * از سرور می‌پرسد این آدرس در تلگرام چه نام و عکسی دارد.
+   * @returns {Promise<{found:boolean, title:string, photo:string}>}
+   */
+  async function lookupChat(username) {
+    const key = String(username || "").trim().toLowerCase();
+    if (!key) return { found: false, title: "", photo: "" };
+    if (chatCache.has(key)) return chatCache.get(key);
+
+    let value = { found: false, title: "", photo: "" };
+
+    if (mode === "online") {
+      try {
+        const data = await apiFetch("/api/chat?u=" + encodeURIComponent(key));
+        if (data.ok) {
+          value = {
+            found: true,
+            title: data.title,
+            photo: data.hasPhoto ? apiBase() + "/api/chat-photo?u=" + encodeURIComponent(key) : ""
+          };
+        }
+      } catch (e) { /* پیدا نشد؛ همان مقدار پیش‌فرض */ }
+    }
+
+    chatCache.set(key, value);
+    return value;
+  }
+
+  /* =======================================================
      ثبت‌نام
      ======================================================= */
 
@@ -375,7 +409,7 @@ window.Store = (function () {
     isOnline: () => mode === "online",
     isRegistered: () => Boolean(profile.registered),
     isPhoneVerified: () => Boolean(profile.phoneVerified),
-    registerPhone, verifyCode, saveProfile,
+    registerPhone, verifyCode, saveProfile, lookupChat,
     list, get, create, summary,
     saveDraft, loadDraft, clearDraft,
     clearSamples

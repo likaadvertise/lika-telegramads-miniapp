@@ -19,6 +19,7 @@ import {
   findUserByPhone
 } from "./db.js";
 import { notifyNewOrder, notifyOrderReceived, sendVerificationCode, notifyNewLead } from "./bot.js";
+import { getChatInfo, getChatPhoto } from "./chatinfo.js";
 
 const MAX_BODY_BYTES = 64 * 1024;
 
@@ -243,6 +244,28 @@ export async function handleApi(req, res, url) {
     return true;
   }
 
+  /* ---------- نام و عکس مقصد، برای پیش‌نمایش تبلیغ ---------- */
+  if (req.method === "GET" && url.pathname === "/api/chat") {
+    const info = await getChatInfo(url.searchParams.get("u"));
+    json(res, info.ok ? 200 : 404, info);
+    return true;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/chat-photo") {
+    const photo = await getChatPhoto(url.searchParams.get("u"));
+    if (!photo.ok) {
+      json(res, 404, { ok: false });
+      return true;
+    }
+    res.writeHead(200, {
+      "Content-Type": photo.contentType,
+      "Content-Length": photo.body.length,
+      "Cache-Control": "private, max-age=3600"
+    });
+    res.end(photo.body);
+    return true;
+  }
+
   /* ---------- لیست کمپین‌ها ---------- */
   if (req.method === "GET" && url.pathname === "/api/campaigns") {
     json(res, 200, { ok: true, campaigns: listCampaignsByUser(userId, 100) });
@@ -282,7 +305,14 @@ export async function handleApi(req, res, url) {
       return true;
     }
 
-    const campaign = createCampaign(userId, check.data);
+    // نام واقعی مقصد را از تلگرام می‌گیریم تا در پنل و پیام تیم درست نشان داده شود
+    let channelTitle = "";
+    try {
+      const info = await getChatInfo(check.data.targetUrl);
+      if (info.ok) channelTitle = info.title;
+    } catch (e) { /* اگر نشد، اشکالی ندارد */ }
+
+    const campaign = createCampaign(userId, { ...check.data, channelTitle });
 
     // اعلان‌ها نباید پاسخ به مشتری را معطل کنند
     notifyNewOrder(campaign, auth.user).catch((e) => console.error("[notify admin]", e.message));
