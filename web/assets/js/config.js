@@ -14,9 +14,9 @@ window.LIKA_CONFIG = {
   brandInitial: "L",           // اگر لوگو نگذارید، این حرف نمایش داده می‌شود
 
   // لوگوی شرکت. فایل را در web/assets/img/ بگذارید و نامش را اینجا بنویسید.
-  // مثال:  brandLogo: "./assets/img/logo.png?v=5"
+  // مثال:  brandLogo: "./assets/img/logo.png"
   // خالی بگذارید تا همان حرف بالا نمایش داده شود.
-  brandLogo: "./assets/img/logo.png",
+  brandLogo: "./assets/img/logo.png?v=5",
 
   /* ---------- آدرس سرور ---------- */
   // آدرس سروری که سفارش‌ها را ذخیره می‌کند.
