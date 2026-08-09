@@ -735,7 +735,6 @@
                inputmode="numeric" dir="ltr" autocomplete="tel"
                placeholder="09123456789" value="${esc(OB.phone)}" />
         ${obError()}
-        <div class="help">شمارهٔ همراه ایران، با ۰۹ شروع می‌شود.</div>
       </div>
 
       <p class="ob__note">با ادامه دادن، ${esc(CFG.brandName)} شمارهٔ شما را فقط برای پیگیری سفارش‌ها استفاده می‌کند.</p>`;
@@ -1495,6 +1494,13 @@
   (async function boot() {
     elScreen.innerHTML = `<div class="empty"><div class="empty__ico">${ICON("send", 30)}</div><div class="empty__t">در حال اتصال…</div></div>`;
     await S.init();
+
+    // اگر ثبت‌نام نیمه‌کاره مانده، از همان مرحله ادامه می‌دهیم
+    if (!S.isRegistered() && S.isPhoneVerified()) {
+      OB.step = "profile";
+      OB.phone = S.profile.phone || "";
+    }
+
     render();
     if (!S.isOnline()) {
       setTimeout(() => toast("حالت نمایشی — سفارش‌ها ذخیره نمی‌شوند", "err"), 700);

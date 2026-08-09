@@ -98,6 +98,10 @@ window.Store = (function () {
       profile = me.profile || emptyProfile();
       requireCode = me.requireCode !== false;
 
+      // یک نسخه محلی نگه می‌داریم تا اگر سرور لحظه‌ای در دسترس نبود،
+      // از کاربری که قبلاً ثبت‌نام کرده دوباره ثبت‌نام نخواهیم
+      saveLocalProfile(profile);
+
       const data = await apiFetch("/api/campaigns");
       cache = data.campaigns || [];
       mode = "online";
@@ -189,6 +193,7 @@ window.Store = (function () {
         body: JSON.stringify({ code })
       });
       profile = data.profile || profile;
+      saveLocalProfile(profile);
       return profile;
     }
 
@@ -210,6 +215,7 @@ window.Store = (function () {
         body: JSON.stringify({ firstName, lastName })
       });
       profile = data.profile || profile;
+      saveLocalProfile(profile);
       return profile;
     }
 
