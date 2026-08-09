@@ -61,6 +61,17 @@ export function sendMessage(chatId, text, extra = {}) {
   });
 }
 
+/** مثل sendMessage ولی اگر نرسید، خطا می‌دهد (برای کد تأیید لازم است) */
+export function sendMessageStrict(chatId, text, extra = {}) {
+  return call("sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    link_preview_options: { is_disabled: true },
+    ...extra
+  });
+}
+
 export function answerCallback(id, text = "", showAlert = false) {
   return tryCall("answerCallbackQuery", { callback_query_id: id, text, show_alert: showAlert });
 }

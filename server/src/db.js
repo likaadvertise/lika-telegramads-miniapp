@@ -8,6 +8,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { config } from "./config.js";
 
@@ -79,7 +80,29 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_events_campaign ON campaign_events(campaign_id, id);
+
+  CREATE TABLE IF NOT EXISTS phone_codes (
+    user_id    INTEGER PRIMARY KEY,
+    phone      TEXT    NOT NULL,
+    code_hash  TEXT    NOT NULL,
+    expires_at TEXT    NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0,
+    sent_at    TEXT    NOT NULL
+  );
 `);
+
+/* ---------- افزودن ستون‌های تازه به جدول‌های قدیمی ---------- */
+function ensureColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+ensureColumn("users", "phone", "TEXT NOT NULL DEFAULT ''");
+ensureColumn("users", "reg_first_name", "TEXT NOT NULL DEFAULT ''");
+ensureColumn("users", "reg_last_name", "TEXT NOT NULL DEFAULT ''");
+ensureColumn("users", "registered_at", "TEXT NOT NULL DEFAULT ''");
 
 const now = () => new Date().toISOString();
 
@@ -113,6 +136,113 @@ export function upsertUser(u) {
 
 export function getUser(id) {
   return qUserGet.get(Number(id));
+}
+
+/* =========================================================
+   ثبت‌نام کاربر (شماره تماس + نام)
+   ========================================================= */
+const CODE_TTL_MINUTES = 3;
+const CODE_MAX_ATTEMPTS = 5;
+const CODE_RESEND_SECONDS = 60;
+
+const qCodeGet = db.prepare("SELECT * FROM phone_codes WHERE user_id = ?");
+const qCodeSet = db.prepare(`
+  INSERT INTO phone_codes (user_id, phone, code_hash, expires_at, attempts, sent_at)
+  VALUES (?, ?, ?, ?, 0, ?)
+  ON CONFLICT(user_id) DO UPDATE SET
+    phone      = excluded.phone,
+    code_hash  = excluded.code_hash,
+    expires_at = excluded.expires_at,
+    attempts   = 0,
+    sent_at    = excluded.sent_at
+`);
+const qCodeAttempt = db.prepare("UPDATE phone_codes SET attempts = attempts + 1 WHERE user_id = ?");
+const qCodeClear = db.prepare("DELETE FROM phone_codes WHERE user_id = ?");
+const qUserSetPhone = db.prepare("UPDATE users SET phone = ? WHERE id = ?");
+const qUserSetProfile = db.prepare(
+  "UPDATE users SET reg_first_name = ?, reg_last_name = ?, registered_at = ? WHERE id = ?"
+);
+
+function hashCode(userId, code) {
+  return crypto.createHash("sha256").update(`${userId}:${code}`).digest("hex");
+}
+
+/** یک کد تصادفی ۵ رقمی می‌سازد و ذخیره می‌کند */
+export function issuePhoneCode(userId, phone) {
+  const existing = qCodeGet.get(Number(userId));
+
+  if (existing) {
+    const since = (Date.now() - new Date(existing.sent_at).getTime()) / 1000;
+    if (since < CODE_RESEND_SECONDS) {
+      return { ok: false, retryAfter: Math.ceil(CODE_RESEND_SECONDS - since) };
+    }
+  }
+
+  // ۱۰۰۰۰ تا ۹۹۹۹۹ — همیشه ۵ رقمی
+  const code = String(10000 + crypto.randomInt(90000));
+  const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60000).toISOString();
+
+  qCodeSet.run(Number(userId), phone, hashCode(userId, code), expiresAt, now());
+  return { ok: true, code, expiresInSeconds: CODE_TTL_MINUTES * 60 };
+}
+
+/** کد واردشده را بررسی می‌کند */
+export function checkPhoneCode(userId, code) {
+  const row = qCodeGet.get(Number(userId));
+  if (!row) return { ok: false, error: "کدی برای شما ارسال نشده است. دوباره درخواست کنید." };
+
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    qCodeClear.run(Number(userId));
+    return { ok: false, error: "کد منقضی شده است. کد جدید بگیرید." };
+  }
+
+  if (row.attempts >= CODE_MAX_ATTEMPTS) {
+    qCodeClear.run(Number(userId));
+    return { ok: false, error: "تعداد تلاش‌ها بیش از حد مجاز بود. کد جدید بگیرید." };
+  }
+
+  const given = Buffer.from(hashCode(userId, String(code)), "hex");
+  const want = Buffer.from(row.code_hash, "hex");
+
+  if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
+    qCodeAttempt.run(Number(userId));
+    const left = CODE_MAX_ATTEMPTS - (row.attempts + 1);
+    return {
+      ok: false,
+      error: left > 0 ? `کد درست نیست. ${left} تلاش دیگر باقی مانده.` : "کد درست نیست."
+    };
+  }
+
+  qCodeClear.run(Number(userId));
+  qUserSetPhone.run(row.phone, Number(userId));
+  return { ok: true, phone: row.phone };
+}
+
+/** ثبت شماره بدون کد تأیید (وقتی کد خاموش است) */
+export function setPhoneDirect(userId, phone) {
+  qUserSetPhone.run(phone, Number(userId));
+  qCodeClear.run(Number(userId));
+  return profileOf(userId);
+}
+
+/** نام و نام خانوادگی را ذخیره و ثبت‌نام را کامل می‌کند */
+export function completeRegistration(userId, firstName, lastName) {
+  qUserSetProfile.run(firstName, lastName, now(), Number(userId));
+  return profileOf(userId);
+}
+
+/** وضعیت ثبت‌نام کاربر */
+export function profileOf(userId) {
+  const u = qUserGet.get(Number(userId));
+  if (!u) return { phone: "", firstName: "", lastName: "", registered: false, phoneVerified: false };
+
+  return {
+    phone: u.phone || "",
+    firstName: u.reg_first_name || "",
+    lastName: u.reg_last_name || "",
+    phoneVerified: Boolean(u.phone),
+    registered: Boolean(u.phone && u.registered_at)
+  };
 }
 
 /* ---------- کمپین‌ها ---------- */

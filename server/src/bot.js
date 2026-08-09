@@ -8,7 +8,8 @@
 import { config, isAdmin } from "./config.js";
 import { sendMessage, answerCallback, editMessageText, webAppButton, mainKeyboard, MENU, esc } from "./telegram.js";
 import { upsertUser, listCampaignsByUser, setCampaignStatus, getCampaignByCode, getUser } from "./db.js";
-import { welcomeMessage, helpMessage, ordersListMessage, customerStatusMessage, adminOrderMessage, adminKeyboard } from "./format.js";
+import { welcomeMessage, helpMessage, ordersListMessage, customerStatusMessage, adminOrderMessage, adminKeyboard, verificationCodeMessage, newLeadMessage } from "./format.js";
+import { sendMessageStrict } from "./telegram.js";
 import { STATUS_LABELS, STATUS_LIST } from "./labels.js";
 
 /* ---------- پیام‌های خصوصی ---------- */
@@ -138,6 +139,17 @@ export async function notifyNewOrder(campaign, user) {
   await sendMessage(config.adminChatId, adminOrderMessage(campaign, user), {
     reply_markup: adminKeyboard(campaign.id)
   });
+}
+
+/* ---------- فرستادن کد تأیید به خود کاربر ---------- */
+export async function sendVerificationCode(userId, code) {
+  await sendMessageStrict(userId, verificationCodeMessage(code));
+}
+
+/* ---------- اطلاع ثبت‌نام کاربر جدید به تیم ---------- */
+export async function notifyNewLead(profile, user) {
+  if (!config.adminChatId) return;
+  await sendMessage(config.adminChatId, newLeadMessage(profile, user));
 }
 
 /* ---------- تأیید ثبت سفارش برای مشتری ---------- */

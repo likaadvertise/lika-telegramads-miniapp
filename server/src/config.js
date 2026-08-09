@@ -86,7 +86,12 @@ export const config = {
   adTextMaxLength: int("AD_TEXT_MAX_LENGTH", 160),
 
   // سقف تعداد سفارش هر کاربر در شبانه‌روز
-  maxOrdersPerDay: int("MAX_ORDERS_PER_DAY", 20)
+  maxOrdersPerDay: int("MAX_ORDERS_PER_DAY", 20),
+
+  // آیا در ثبت‌نام، کد تأیید به تلگرام کاربر فرستاده شود؟
+  //   1 = بله (شماره → کد → نام)
+  //   0 = خیر (شماره → نام)  ← مرحلهٔ کمتر، لید بیشتر
+  requirePhoneCode: bool("REQUIRE_PHONE_CODE", true)
 };
 
 export function isAdmin(userId) {

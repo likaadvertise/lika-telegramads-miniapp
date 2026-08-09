@@ -591,6 +591,40 @@ ul { margin: 0; padding: 0; list-style: none; }
 .toast.is-err { background: var(--danger); }
 .toast.is-ok  { background: var(--success); }
 
+/* ---------- ۲۲.۳) ثبت‌نام ---------- */
+.ob { padding-top: 18px; }
+
+.ob__dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 28px; }
+.ob__dot {
+  width: 26px; height: 4px; border-radius: 99px;
+  background: var(--surface-3);
+  transition: background .25s ease;
+}
+.ob__dot.is-on { background: var(--brand); }
+
+.ob__head { text-align: center; margin-bottom: 26px; }
+.ob__ico {
+  width: 62px; height: 62px; margin: 0 auto 16px;
+  border-radius: 22px;
+  background: var(--brand-soft); color: var(--brand);
+  display: grid; place-items: center;
+}
+.ob__t { font-size: 21px; font-weight: 800; }
+.ob__d { font-size: 13px; color: var(--text-dim); margin-top: 8px; line-height: 1.9; }
+
+.ob__input { height: 54px; font-size: 16px; font-weight: 600; }
+.ob__code {
+  text-align: center;
+  letter-spacing: 10px;
+  text-indent: 10px;   /* جبران فاصلهٔ اضافه بعد از آخرین رقم */
+  font-size: 22px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ob__note {
+  margin-top: 22px; text-align: center;
+  font-size: 11.5px; color: var(--text-faint); line-height: 1.9;
+}
+
 /* ---------- ۲۲.۴) نوار هشدار ---------- */
 .notice {
   display: flex; align-items: center; gap: 8px;

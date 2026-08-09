@@ -11,12 +11,13 @@
 
 import { config } from "./config.js";
 import { verifyInitData, rateLimit } from "./auth.js";
-import { validateCampaign } from "./validate.js";
+import { validateCampaign, normalizePhone, validateName, normalizeCode } from "./validate.js";
 import {
   upsertUser, createCampaign, listCampaignsByUser,
-  getCampaignByCode, summaryForUser, countOrdersToday
+  getCampaignByCode, summaryForUser, countOrdersToday,
+  issuePhoneCode, checkPhoneCode, completeRegistration, profileOf, setPhoneDirect
 } from "./db.js";
-import { notifyNewOrder, notifyOrderReceived } from "./bot.js";
+import { notifyNewOrder, notifyOrderReceived, sendVerificationCode, notifyNewLead } from "./bot.js";
 
 const MAX_BODY_BYTES = 64 * 1024;
 
@@ -122,7 +123,107 @@ export async function handleApi(req, res, url) {
 
   /* ---------- اطلاعات کاربر ---------- */
   if (req.method === "GET" && url.pathname === "/api/me") {
-    json(res, 200, { ok: true, user: auth.user, summary: summaryForUser(userId) });
+    json(res, 200, {
+      ok: true,
+      user: auth.user,
+      profile: profileOf(userId),
+      requireCode: config.requirePhoneCode,
+      summary: summaryForUser(userId)
+    });
+    return true;
+  }
+
+  /* =======================================================
+     ثبت‌نام
+     ======================================================= */
+
+  /* گام ۱ — شمارهٔ موبایل */
+  if (req.method === "POST" && url.pathname === "/api/register/phone") {
+    const phone = normalizePhone(body.phone);
+    if (!phone.ok) {
+      json(res, 400, { ok: false, error: phone.error });
+      return true;
+    }
+
+    // اگر کد تأیید خاموش است، شماره همین‌جا ثبت می‌شود
+    if (!config.requirePhoneCode) {
+      setPhoneDirect(userId, phone.phone);
+      json(res, 200, { ok: true, codeSent: false, profile: profileOf(userId) });
+      return true;
+    }
+
+    const issued = issuePhoneCode(userId, phone.phone);
+    if (!issued.ok) {
+      json(res, 429, {
+        ok: false,
+        error: `کد قبلی هنوز معتبر است. ${issued.retryAfter} ثانیه دیگر دوباره تلاش کنید.`,
+        retryAfter: issued.retryAfter
+      });
+      return true;
+    }
+
+    try {
+      await sendVerificationCode(userId, issued.code);
+    } catch (err) {
+      console.error("[register] ارسال کد ناموفق:", err.message);
+      json(res, 502, {
+        ok: false,
+        error: "ارسال کد به تلگرام شما ممکن نشد. مطمئن شوید ربات را بلاک نکرده‌اید."
+      });
+      return true;
+    }
+
+    json(res, 200, { ok: true, codeSent: true, expiresInSeconds: issued.expiresInSeconds });
+    return true;
+  }
+
+  /* گام ۲ — کد تأیید */
+  if (req.method === "POST" && url.pathname === "/api/register/verify") {
+    const code = normalizeCode(body.code);
+    if (!code.ok) {
+      json(res, 400, { ok: false, error: code.error });
+      return true;
+    }
+
+    const result = checkPhoneCode(userId, code.code);
+    if (!result.ok) {
+      json(res, 400, { ok: false, error: result.error });
+      return true;
+    }
+
+    json(res, 200, { ok: true, profile: profileOf(userId) });
+    return true;
+  }
+
+  /* گام ۳ — نام و نام خانوادگی */
+  if (req.method === "POST" && url.pathname === "/api/register/profile") {
+    const current = profileOf(userId);
+    if (!current.phoneVerified) {
+      json(res, 400, { ok: false, error: "اول شمارهٔ موبایل خود را ثبت کنید." });
+      return true;
+    }
+
+    const first = validateName(body.firstName, "نام");
+    if (!first.ok) {
+      json(res, 400, { ok: false, error: first.error });
+      return true;
+    }
+
+    const last = validateName(body.lastName, "نام خانوادگی");
+    if (!last.ok) {
+      json(res, 400, { ok: false, error: last.error });
+      return true;
+    }
+
+    const wasRegistered = current.registered;
+    const profile = completeRegistration(userId, first.name, last.name);
+
+    // لید جدید را به تیم اطلاع بده (فقط بار اول)
+    if (!wasRegistered) {
+      notifyNewLead(profile, auth.user).catch((e) => console.error("[notify lead]", e.message));
+    }
+
+    json(res, 200, { ok: true, profile });
     return true;
   }
 
@@ -146,6 +247,11 @@ export async function handleApi(req, res, url) {
 
   /* ---------- ثبت کمپین جدید ---------- */
   if (req.method === "POST" && url.pathname === "/api/campaigns") {
+    if (!profileOf(userId).registered) {
+      json(res, 403, { ok: false, error: "برای ثبت سفارش، اول ثبت‌نام را کامل کنید." });
+      return true;
+    }
+
     if (countOrdersToday(userId) >= config.maxOrdersPerDay) {
       json(res, 429, {
         ok: false,

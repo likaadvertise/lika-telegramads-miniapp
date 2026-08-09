@@ -136,6 +136,9 @@
   };
 
   function userName() {
+    const p = S.profile;
+    if (p && p.firstName) return [p.firstName, p.lastName].filter(Boolean).join(" ");
+
     const u = tgSafe.user();
     if (!u) return "کاربر مهمان";
     return [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "کاربر تلگرام";
@@ -177,6 +180,12 @@
   }
 
   function render() {
+    // تا وقتی ثبت‌نام کامل نشده، هیچ صفحهٔ دیگری باز نمی‌شود
+    if (!S.isRegistered()) {
+      renderOnboarding();
+      return;
+    }
+
     const route = currentRoute();
     const isTab = TABS.some((t) => t.route === route);
 
@@ -584,6 +593,193 @@
           <p class="help center mt-12">نسخهٔ آزمایشی ۰٫۱ — ${esc(CFG.brandName)}</p>
         </section>`
     };
+  }
+
+  /* =======================================================
+     ۴.۹) ثبت‌نام (اولین چیزی که مخاطب می‌بیند)
+     ======================================================= */
+
+  const OB = { step: "phone", phone: "", code: "", firstName: "", lastName: "", error: "", busy: false, hint: "" };
+
+  function onboardingSteps() {
+    return S.requireCode ? ["phone", "code", "profile"] : ["phone", "profile"];
+  }
+
+  function renderOnboarding() {
+    const steps = onboardingSteps();
+    const index = Math.max(0, steps.indexOf(OB.step));
+
+    elTabbar.hidden = true;
+    tgSafe.back(false);
+    tgSafe.closeGuard(false);
+
+    const bodies = { phone: obPhone, code: obCode, profile: obProfile };
+
+    elAppbar.className = "appbar";
+    elAppbar.innerHTML = `
+      <div class="brandmark">
+        <div class="brandmark__logo">${esc(CFG.brandInitial)}</div>
+        <div>
+          <div class="brandmark__name">${esc(CFG.brandName)}</div>
+          <div class="brandmark__tag">${esc(CFG.brandTag)}</div>
+        </div>
+      </div>`;
+
+    elScreen.className = "screen is-full";
+    elScreen.innerHTML = `
+      <div class="ob">
+        <div class="ob__dots">
+          ${steps.map((_, i) => `<span class="ob__dot ${i <= index ? "is-on" : ""}"></span>`).join("")}
+        </div>
+        ${bodies[OB.step]()}
+      </div>
+      ${obBar()}`;
+
+    bindOnboarding();
+    window.scrollTo(0, 0);
+  }
+
+  function obBar() {
+    const labels = { phone: "ادامه", code: "تأیید و ادامه", profile: "ورود به پنل" };
+    return `
+      <div class="stickybar">
+        ${OB.step === "code" ? `<button class="btn btn--outline btn--back" data-act="ob-back" aria-label="بازگشت">${ICON("back")}</button>` : ""}
+        <button class="btn btn--primary" data-act="ob-next" ${OB.busy ? "disabled" : ""}>
+          ${OB.busy ? "لطفاً صبر کنید…" : labels[OB.step]}
+        </button>
+      </div>`;
+  }
+
+  const obError = () => (OB.error ? `<div class="err">${esc(OB.error)}</div>` : "");
+
+  /* --- گام ۱: شمارهٔ موبایل --- */
+  function obPhone() {
+    return `
+      <div class="ob__head">
+        <div class="ob__ico">${ICON("user", 26)}</div>
+        <h1 class="ob__t">خوش آمدید</h1>
+        <p class="ob__d">برای شروع، شمارهٔ موبایل خود را وارد کنید.<br />کارشناسان ما برای پیگیری سفارش با شما تماس می‌گیرند.</p>
+      </div>
+
+      <div class="field">
+        <div class="label">شمارهٔ موبایل <span class="req">*</span></div>
+        <input class="input ob__input ${OB.error ? "is-error" : ""}" id="ob-phone" type="tel"
+               inputmode="numeric" dir="ltr" autocomplete="tel"
+               placeholder="09123456789" value="${esc(OB.phone)}" />
+        ${obError()}
+        <div class="help">شمارهٔ خارج از ایران را با کد کشور وارد کنید. مثال: <span dir="ltr">+971501234567</span></div>
+      </div>
+
+      <p class="ob__note">با ادامه دادن، ${esc(CFG.brandName)} شمارهٔ شما را فقط برای پیگیری سفارش‌ها استفاده می‌کند.</p>`;
+  }
+
+  /* --- گام ۲: کد تأیید --- */
+  function obCode() {
+    return `
+      <div class="ob__head">
+        <div class="ob__ico">${ICON("chat", 26)}</div>
+        <h1 class="ob__t">کد تأیید</h1>
+        <p class="ob__d">کد ۵ رقمی را در تلگرام برایتان فرستادیم.<br />همین چت را بالا ببرید تا آن را ببینید.</p>
+      </div>
+
+      <div class="field">
+        <div class="label">کد تأیید <span class="req">*</span></div>
+        <input class="input ob__input ob__code ${OB.error ? "is-error" : ""}" id="ob-code" type="text"
+               inputmode="numeric" dir="ltr" maxlength="5" autocomplete="one-time-code"
+               placeholder="- - - - -" value="${esc(OB.code)}" />
+        ${obError()}
+        ${OB.hint ? `<div class="help">${esc(OB.hint)}</div>` : ""}
+      </div>
+
+      <button class="btn btn--ghost btn--block mt-8" data-act="ob-resend">کد را دوباره بفرست</button>
+      <p class="ob__note">شماره: <span dir="ltr">${esc(OB.phone)}</span></p>`;
+  }
+
+  /* --- گام ۳: نام --- */
+  function obProfile() {
+    return `
+      <div class="ob__head">
+        <div class="ob__ico">${ICON("check", 26)}</div>
+        <h1 class="ob__t">آخرین قدم</h1>
+        <p class="ob__d">نام خود را وارد کنید تا پنل شخصی‌سازی شود.</p>
+      </div>
+
+      <div class="field">
+        <div class="label">نام <span class="req">*</span></div>
+        <input class="input ob__input ${OB.error ? "is-error" : ""}" id="ob-first"
+               autocomplete="given-name" placeholder="مثلاً: علی" value="${esc(OB.firstName)}" />
+      </div>
+
+      <div class="field">
+        <div class="label">نام خانوادگی <span class="req">*</span></div>
+        <input class="input ob__input ${OB.error ? "is-error" : ""}" id="ob-last"
+               autocomplete="family-name" placeholder="مثلاً: رضایی" value="${esc(OB.lastName)}" />
+        ${obError()}
+      </div>`;
+  }
+
+  function bindOnboarding() {
+    const on = (id, fn) => { const el = $("#" + id); if (el) el.addEventListener("input", fn); };
+    on("ob-phone", (e) => { OB.phone = e.target.value; });
+    on("ob-code", (e) => { OB.code = e.target.value; });
+    on("ob-first", (e) => { OB.firstName = e.target.value; });
+    on("ob-last", (e) => { OB.lastName = e.target.value; });
+
+    const first = $(".ob__input");
+    if (first && !OB.busy) setTimeout(() => { try { first.focus(); } catch (e) {} }, 250);
+  }
+
+  async function obNext() {
+    if (OB.busy) return;
+    OB.error = "";
+    OB.busy = true;
+    renderOnboarding();
+
+    try {
+      if (OB.step === "phone") {
+        const res = await S.registerPhone(OB.phone);
+        if (res.codeSent) {
+          OB.step = "code";
+          OB.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "";
+        } else {
+          OB.step = "profile";
+        }
+      } else if (OB.step === "code") {
+        await S.verifyCode(OB.code);
+        OB.step = "profile";
+      } else {
+        await S.saveProfile(OB.firstName, OB.lastName);
+        tgSafe.notify("success");
+        OB.busy = false;
+        go("/", true);
+        render();
+        return;
+      }
+      tgSafe.tap();
+    } catch (err) {
+      OB.error = err.message || "مشکلی پیش آمد. دوباره تلاش کنید.";
+      tgSafe.notify("error");
+    } finally {
+      OB.busy = false;
+      renderOnboarding();
+    }
+  }
+
+  async function obResend() {
+    if (OB.busy) return;
+    OB.busy = true;
+    OB.error = "";
+    renderOnboarding();
+    try {
+      const res = await S.registerPhone(OB.phone);
+      OB.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "کد دوباره فرستاده شد.";
+      toast("کد دوباره فرستاده شد", "ok");
+    } catch (err) {
+      OB.error = err.message || "ارسال دوباره ممکن نشد.";
+    } finally {
+      OB.busy = false;
+      renderOnboarding();
+    }
   }
 
   /* =======================================================
@@ -1158,6 +1354,9 @@
       return;
     }
     if (act === "back") { tgSafe.tap(); goBack(); return; }
+    if (act === "ob-next") { obNext(); return; }
+    if (act === "ob-resend") { obResend(); return; }
+    if (act === "ob-back") { OB.step = "phone"; OB.error = ""; renderOnboarding(); return; }
     if (act === "next") { nextStep(); return; }
     if (act === "prev") { tgSafe.tap(); W.step--; W.errors = {}; render(); return; }
 

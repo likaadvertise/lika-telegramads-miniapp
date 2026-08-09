@@ -110,6 +110,32 @@ export function ordersListMessage(campaigns) {
   return [`<b>سفارش‌های شما</b> (${fa(campaigns.length)} مورد)`, "", rows.join("\n\n")].join("\n");
 }
 
+/* ---------- کد تأیید شماره ---------- */
+export function verificationCodeMessage(code) {
+  return [
+    "کد تأیید شمارهٔ شما:",
+    "",
+    `<code>${esc(code)}</code>`,
+    "",
+    "این کد تا ۳ دقیقه معتبر است.",
+    "اگر شما درخواست نداده‌اید، این پیام را نادیده بگیرید."
+  ].join("\n");
+}
+
+/* ---------- اطلاع «کاربر جدید» به تیم ---------- */
+export function newLeadMessage(profile, user) {
+  const lines = [
+    "<b>کاربر جدید ثبت‌نام کرد</b>",
+    "",
+    `<b>نام:</b> ${esc(profile.firstName)} ${esc(profile.lastName)}`,
+    `<b>شماره:</b> <code>${esc(profile.phone)}</code>`,
+    `<b>تلگرام:</b> ${userLine(user)}`,
+    "",
+    `<b>زمان:</b> ${faDate(new Date().toISOString())}`
+  ];
+  return lines.join("\n");
+}
+
 /* ---------- پیام خوش‌آمد ---------- */
 export function welcomeMessage(name, brandName = "Lika Ads") {
   return [

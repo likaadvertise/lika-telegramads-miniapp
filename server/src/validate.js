@@ -27,6 +27,60 @@ function cleanList(value, { max = 40, itemMax = 64 } = {}) {
     .map((x) => x.slice(0, itemMax));
 }
 
+/* =========================================================
+   شماره تماس و نام
+   ========================================================= */
+
+/** تبدیل ارقام فارسی و عربی به انگلیسی */
+function latinDigits(value) {
+  return String(value ?? "")
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+}
+
+/**
+ * شمارهٔ موبایل را به شکل استاندارد بین‌المللی درمی‌آورد.
+ * ورودی‌های پذیرفته‌شده: ۰۹۱۲۳۴۵۶۷۸۹ / 09123456789 / 9123456789 /
+ *                        00989123456789 / +989123456789 / +49...
+ * @returns {{ok: true, phone: string} | {ok: false, error: string}}
+ */
+export function normalizePhone(input) {
+  let raw = latinDigits(input).replace(/[\s()\-._]/g, "").trim();
+
+  if (!raw) return { ok: false, error: "شمارهٔ موبایل را وارد کنید." };
+
+  if (raw.startsWith("00")) raw = "+" + raw.slice(2);
+
+  // شماره‌های ایرانی
+  if (/^09\d{9}$/.test(raw)) return { ok: true, phone: "+98" + raw.slice(1) };
+  if (/^9\d{9}$/.test(raw)) return { ok: true, phone: "+98" + raw };
+  if (/^\+989\d{9}$/.test(raw)) return { ok: true, phone: raw };
+
+  // شماره‌های بین‌المللی
+  if (/^\+\d{8,15}$/.test(raw)) return { ok: true, phone: raw };
+
+  return { ok: false, error: "شمارهٔ موبایل درست نیست. مثال: ۰۹۱۲۳۴۵۶۷۸۹" };
+}
+
+/** نام یا نام خانوادگی */
+export function validateName(input, label) {
+  const name = String(input ?? "").replace(/\s+/g, " ").trim();
+
+  if (name.length < 2) return { ok: false, error: `${label} را کامل وارد کنید.` };
+  if (name.length > 40) return { ok: false, error: `${label} خیلی طولانی است.` };
+  if (!/^[\p{L}\u200c\s'’-]+$/u.test(name)) {
+    return { ok: false, error: `${label} فقط می‌تواند شامل حروف باشد.` };
+  }
+  return { ok: true, name };
+}
+
+/** کد تأیید ۵ رقمی */
+export function normalizeCode(input) {
+  const code = latinDigits(input).replace(/\D/g, "");
+  if (code.length !== 5) return { ok: false, error: "کد تأیید ۵ رقمی است." };
+  return { ok: true, code };
+}
+
 /**
  * @returns {{ok: true, data: object} | {ok: false, error: string}}
  */

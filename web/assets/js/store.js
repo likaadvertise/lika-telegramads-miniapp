@@ -40,8 +40,17 @@ window.Store = (function () {
   /* =======================================================
      وضعیت داخلی
      ======================================================= */
+  const PROFILE_KEY = "lika_ads_profile_v1";
+  const DEMO_CODE = "12345";   // کد ثابت حالت نمایشی
+
   let mode = "demo";        // "online" یا "demo"
   let cache = [];           // کمپین‌ها در حافظه، برای نمایش سریع
+  let profile = emptyProfile();
+  let requireCode = true;
+
+  function emptyProfile() {
+    return { phone: "", firstName: "", lastName: "", phoneVerified: false, registered: false };
+  }
 
   const apiBase = () => (window.LIKA_CONFIG.apiBase || "").replace(/\/+$/, "");
 
@@ -76,9 +85,7 @@ window.Store = (function () {
   async function init() {
     // بدون امضای تلگرام سرور ما را نمی‌شناسد؛ پس حالت نمایشی
     if (!initData()) {
-      mode = "demo";
-      seedSamples();
-      cache = localList();
+      startDemo();
       return mode;
     }
 
@@ -87,15 +94,25 @@ window.Store = (function () {
       const health = await fetch(apiBase() + "/api/health", { signal: timeout });
       if (!health.ok) throw new Error("سرور در دسترس نیست");
 
+      const me = await apiFetch("/api/me");
+      profile = me.profile || emptyProfile();
+      requireCode = me.requireCode !== false;
+
       const data = await apiFetch("/api/campaigns");
       cache = data.campaigns || [];
       mode = "online";
     } catch (e) {
-      mode = "demo";
-      seedSamples();
-      cache = localList();
+      startDemo();
     }
     return mode;
+  }
+
+  function startDemo() {
+    mode = "demo";
+    requireCode = window.LIKA_CONFIG.demoRequireCode !== false;
+    seedSamples();
+    cache = localList();
+    profile = localProfile();
   }
 
   /** تازه‌سازی لیست از سرور (بعد از بازگشت به اپ) */
@@ -129,6 +146,82 @@ window.Store = (function () {
         .reduce((s, c) => s + (c.budget?.amountUsd || 0), 0),
       views: all.reduce((s, c) => s + (c.stats?.views || 0), 0)
     };
+  }
+
+  /* =======================================================
+     ثبت‌نام
+     ======================================================= */
+
+  /** گام ۱ — ثبت شماره. اگر کد لازم باشد، برای کاربر فرستاده می‌شود. */
+  async function registerPhone(phone) {
+    if (mode === "online") {
+      const data = await apiFetch("/api/register/phone", {
+        method: "POST",
+        body: JSON.stringify({ phone })
+      });
+      if (data.profile) profile = data.profile;
+      return { codeSent: Boolean(data.codeSent) };
+    }
+
+    // حالت نمایشی
+    const p = localProfile();
+    p.phone = phone;
+    if (!requireCode) p.phoneVerified = true;
+    saveLocalProfile(p);
+    profile = p;
+    return { codeSent: requireCode, demoCode: requireCode ? DEMO_CODE : null };
+  }
+
+  /** گام ۲ — بررسی کد تأیید */
+  async function verifyCode(code) {
+    if (mode === "online") {
+      const data = await apiFetch("/api/register/verify", {
+        method: "POST",
+        body: JSON.stringify({ code })
+      });
+      profile = data.profile || profile;
+      return profile;
+    }
+
+    if (String(code).trim() !== DEMO_CODE) {
+      throw new Error(`حالت نمایشی: کد ${DEMO_CODE} را وارد کنید.`);
+    }
+    const p = localProfile();
+    p.phoneVerified = true;
+    saveLocalProfile(p);
+    profile = p;
+    return profile;
+  }
+
+  /** گام ۳ — نام و نام خانوادگی */
+  async function saveProfile(firstName, lastName) {
+    if (mode === "online") {
+      const data = await apiFetch("/api/register/profile", {
+        method: "POST",
+        body: JSON.stringify({ firstName, lastName })
+      });
+      profile = data.profile || profile;
+      return profile;
+    }
+
+    const p = localProfile();
+    p.firstName = firstName;
+    p.lastName = lastName;
+    p.registered = true;
+    saveLocalProfile(p);
+    profile = p;
+    return profile;
+  }
+
+  function localProfile() {
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      return raw ? Object.assign(emptyProfile(), JSON.parse(raw)) : emptyProfile();
+    } catch (e) { return emptyProfile(); }
+  }
+
+  function saveLocalProfile(p) {
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch (e) {}
   }
 
   /* =======================================================
@@ -261,7 +354,12 @@ window.Store = (function () {
     STATUS, FLOW, TARGET_TYPES,
     init, refresh,
     get mode() { return mode; },
+    get profile() { return profile; },
+    get requireCode() { return requireCode; },
     isOnline: () => mode === "online",
+    isRegistered: () => Boolean(profile.registered),
+    isPhoneVerified: () => Boolean(profile.phoneVerified),
+    registerPhone, verifyCode, saveProfile,
     list, get, create, summary,
     saveDraft, loadDraft, clearDraft,
     clearSamples
