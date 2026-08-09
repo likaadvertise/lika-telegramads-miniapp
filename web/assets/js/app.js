@@ -171,6 +171,7 @@
     if (r === "/new") { go("/"); return; }
     if (r.startsWith("/campaign/")) { go("/campaigns"); return; }
     if (r.startsWith("/success/")) { go("/campaigns"); return; }
+    if (r === "/profile") { go("/account"); return; }
     if (r === "/rules") {
       // اگر از فرم آمده بود، به همان مرحله برگردد
       if (history.length > 1) history.back(); else go("/support");
@@ -203,6 +204,7 @@
     else if (route === "/account") view = viewAccount();
     else if (route === "/new") view = viewWizard();
     else if (route === "/rules") view = viewRules();
+    else if (route === "/profile") view = viewProfile();
     else if (route.startsWith("/campaign/")) view = viewCampaignDetail(route.split("/")[2]);
     else if (route.startsWith("/success/")) view = viewSuccess(route.split("/")[2]);
     else view = viewHome();
@@ -546,6 +548,7 @@
   /* ---------- ۴.۸ حساب من ---------- */
   function viewAccount() {
     const u = tgSafe.user();
+    const p = S.profile;
     const sum = S.summary();
     const dark = document.documentElement.getAttribute("data-theme") === "dark";
 
@@ -568,6 +571,18 @@
             <div class="stat"><div class="stat__num">${num(sum.spend)}$</div><div class="stat__lbl">هزینه</div></div>
           </div>
         </div>
+
+        <section class="section">
+          <div class="section__head">
+            <h2 class="section__title">اطلاعات من</h2>
+            <button class="section__link" data-act="go" data-route="/profile">ویرایش</button>
+          </div>
+          <div class="card">
+            ${kv("نام", p.firstName || "—")}
+            ${kv("نام خانوادگی", p.lastName || "—")}
+            ${kv("شمارهٔ همراه", p.phone || "—", true)}
+          </div>
+        </section>
 
         <section class="section">
           <div class="menu">
@@ -595,6 +610,132 @@
           <p class="help center mt-12">نسخهٔ آزمایشی ۰٫۱ — ${esc(CFG.brandName)}</p>
         </section>`
     };
+  }
+
+  /* =======================================================
+     ۴.۸) ویرایش اطلاعات کاربر
+     ======================================================= */
+
+  const PR = { step: "view", firstName: "", lastName: "", phone: "", code: "", error: "", busy: false, hint: "" };
+
+  function openProfile() {
+    const p = S.profile;
+    PR.step = "view";
+    PR.firstName = p.firstName || "";
+    PR.lastName = p.lastName || "";
+    PR.phone = "";
+    PR.code = "";
+    PR.error = "";
+    PR.hint = "";
+  }
+
+  const prError = () => (PR.error ? `<div class="err">${esc(PR.error)}</div>` : "");
+
+  function viewProfile() {
+    const body = PR.step === "phone" ? prPhone() : PR.step === "code" ? prCode() : prView();
+
+    return {
+      bar: bar("اطلاعات من", "نام و شمارهٔ تماس شما"),
+      body,
+      after: () => {
+        stopObTimer();
+        if (PR.step === "code") { obTick(); obTimer = setInterval(obTick, 1000); }
+
+        const on = (id, fn) => { const el = $("#" + id); if (el) el.addEventListener("input", fn); };
+        on("pr-first", (e) => { PR.firstName = e.target.value; });
+        on("pr-last", (e) => { PR.lastName = e.target.value; });
+        on("pr-phone", (e) => { PR.phone = e.target.value; });
+        on("pr-code", (e) => { PR.code = e.target.value; });
+      }
+    };
+  }
+
+  function prView() {
+    return `
+      <div class="card">
+        <div class="field">
+          <div class="label">نام <span class="req">*</span></div>
+          <input class="input" id="pr-first" autocomplete="given-name" value="${esc(PR.firstName)}" />
+        </div>
+        <div class="field">
+          <div class="label">نام خانوادگی <span class="req">*</span></div>
+          <input class="input" id="pr-last" autocomplete="family-name" value="${esc(PR.lastName)}" />
+          ${prError()}
+        </div>
+        <button class="btn btn--primary btn--block mt-16" data-act="pr-save" ${PR.busy ? "disabled" : ""}>
+          ${PR.busy ? "در حال ذخیره…" : "ذخیره تغییرات"}
+        </button>
+      </div>
+
+      <section class="section">
+        <div class="section__head"><h2 class="section__title">شمارهٔ همراه</h2></div>
+        <div class="card">
+          <div class="row-between">
+            <span class="kv__v nums" dir="ltr">${esc(S.profile.phone || "—")}</span>
+            <button class="btn btn--sm btn--outline" data-act="pr-phone-start">تغییر شماره</button>
+          </div>
+          <div class="help mt-8">برای تغییر شماره، کد تأیید به تلگرام شما فرستاده می‌شود.</div>
+        </div>
+      </section>`;
+  }
+
+  function prPhone() {
+    return `
+      <div class="card">
+        <div class="field">
+          <div class="label">شمارهٔ همراه جدید <span class="req">*</span></div>
+          <input class="input ob__input" id="pr-phone" type="tel" inputmode="numeric" dir="ltr"
+                 placeholder="09123456789" value="${esc(PR.phone)}" />
+          ${prError()}
+        </div>
+        <div class="btn-row mt-16">
+          <button class="btn btn--outline" data-act="pr-cancel">انصراف</button>
+          <button class="btn btn--primary" data-act="pr-phone-send" ${PR.busy ? "disabled" : ""}>
+            ${PR.busy ? "لطفاً صبر کنید…" : "ارسال کد"}
+          </button>
+        </div>
+      </div>`;
+  }
+
+  function prCode() {
+    return `
+      <div class="card">
+        <div class="field">
+          <div class="label">کد تأیید <span class="req">*</span></div>
+          <input class="input ob__input ob__code" id="pr-code" type="text" inputmode="numeric"
+                 dir="ltr" maxlength="5" placeholder="- - - - -" value="${esc(PR.code)}" />
+          ${prError()}
+          ${PR.hint ? `<div class="help">${esc(PR.hint)}</div>` : ""}
+        </div>
+
+        <div class="ob__timer" id="ob-timer"></div>
+        <button class="btn btn--ghost btn--block mt-8" id="ob-resend" data-act="pr-resend" disabled>کد را دوباره بفرست</button>
+
+        <div class="btn-row mt-16">
+          <button class="btn btn--outline" data-act="pr-cancel">انصراف</button>
+          <button class="btn btn--primary" data-act="pr-code-verify" ${PR.busy ? "disabled" : ""}>
+            ${PR.busy ? "در حال بررسی…" : "تأیید شماره"}
+          </button>
+        </div>
+        <p class="ob__note">شمارهٔ جدید: <span dir="ltr">${esc(PR.phone)}</span></p>
+      </div>`;
+  }
+
+  async function prRun(fn, onDone) {
+    if (PR.busy) return;
+    PR.busy = true;
+    PR.error = "";
+    render();
+    try {
+      await fn();
+      if (onDone) onDone();
+    } catch (err) {
+      PR.error = err.message || "مشکلی پیش آمد.";
+      tgSafe.notify("error");
+    } finally {
+      PR.busy = false;
+      render();
+    }
   }
 
   /* =======================================================
@@ -770,7 +911,7 @@
       <div class="ob__head">
         <div class="ob__ico">${ICON("check", 26)}</div>
         <h1 class="ob__t">آخرین قدم</h1>
-        <p class="ob__d">نام خود را وارد کنید تا پنل شخصی‌سازی شود.</p>
+        <p class="ob__d">نام و نام خانوادگی خود را لطفاً وارد کنید.</p>
       </div>
 
       <div class="field">
@@ -1434,11 +1575,53 @@
     if (act === "go") {
       tgSafe.tap();
       if (btn.dataset.route === "/new") { startWizard(); return; }
+      if (btn.dataset.route === "/profile") openProfile();
       go(btn.dataset.route);
       return;
     }
     if (act === "back") { tgSafe.tap(); goBack(); return; }
     if (act === "ob-next") { obNext(); return; }
+
+    if (act === "pr-save") {
+      prRun(
+        () => S.saveProfile(PR.firstName, PR.lastName),
+        () => { tgSafe.notify("success"); toast("اطلاعات ذخیره شد", "ok"); }
+      );
+      return;
+    }
+    if (act === "pr-phone-start") { PR.step = "phone"; PR.error = ""; PR.phone = ""; render(); return; }
+    if (act === "pr-cancel") { openProfile(); stopObTimer(); render(); return; }
+    if (act === "pr-phone-send") {
+      prRun(async () => {
+        const res = await S.registerPhone(PR.phone);
+        PR.step = "code";
+        PR.code = "";
+        PR.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "";
+        startCodeTimer(res);
+      });
+      return;
+    }
+    if (act === "pr-resend") {
+      prRun(async () => {
+        const res = await S.registerPhone(PR.phone);
+        PR.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "کد دوباره فرستاده شد.";
+        PR.code = "";
+        startCodeTimer(res);
+      });
+      return;
+    }
+    if (act === "pr-code-verify") {
+      prRun(
+        () => S.verifyCode(PR.code),
+        () => {
+          stopObTimer();
+          openProfile();
+          tgSafe.notify("success");
+          toast("شمارهٔ همراه به‌روز شد", "ok");
+        }
+      );
+      return;
+    }
     if (act === "ob-resend") { obResend(); return; }
     if (act === "ob-back") { OB.step = "phone"; OB.error = ""; OB.code = ""; renderOnboarding(); return; }
     if (act === "next") { nextStep(); return; }
