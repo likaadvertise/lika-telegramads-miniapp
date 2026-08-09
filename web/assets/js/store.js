@@ -31,10 +31,11 @@ window.Store = (function () {
   /* ---------- مسیر پیشرفت یک کمپین (برای تایم‌لاین) ---------- */
   const FLOW = ["pending", "review", "approved", "running", "done"];
 
+  // ترتیب همین‌جا تعیین می‌شود؛ به همین ترتیب در فرم نمایش داده می‌شود
   const TARGET_TYPES = {
-    bot:     { label: "ربات",   icon: "bot",       desc: "مخاطب ربات شما را استارت می‌کند" },
+    channel: { label: "کانال",  icon: "megaphone", desc: "مخاطب وارد کانال شما می‌شود" },
     search:  { label: "جستجو",  icon: "search",    desc: "تبلیغ شما در نتایج جستجوی تلگرام دیده می‌شود" },
-    channel: { label: "کانال",  icon: "megaphone", desc: "مخاطب وارد کانال شما می‌شود" }
+    bot:     { label: "ربات",   icon: "bot",       desc: "مخاطب ربات شما را استارت می‌کند" }
   };
 
   /* =======================================================

@@ -18,9 +18,9 @@ export const STATUS_LABELS = {
 export const STATUS_LIST = Object.keys(STATUS_LABELS);
 
 export const TARGET_LABELS = {
-  bot: "ربات",
+  channel: "کانال",
   search: "جستجو",
-  channel: "کانال"
+  bot: "ربات"
 };
 
 export const START_LABELS = {
