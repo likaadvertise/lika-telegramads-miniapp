@@ -186,6 +186,8 @@
       return;
     }
 
+    stopObTimer();
+
     const route = currentRoute();
     const isTab = TABS.some((t) => t.route === route);
 
@@ -599,7 +601,73 @@
      ۴.۹) ثبت‌نام (اولین چیزی که مخاطب می‌بیند)
      ======================================================= */
 
-  const OB = { step: "phone", phone: "", code: "", firstName: "", lastName: "", error: "", busy: false, hint: "" };
+  const OB = {
+    step: "phone", phone: "", code: "", firstName: "", lastName: "",
+    error: "", busy: false, hint: "",
+    sentAt: 0,          // زمان ارسال کد
+    expiresIn: 180,     // اعتبار کد (ثانیه)
+    resendIn: 60,       // فاصلهٔ مجاز تا ارسال دوباره (ثانیه)
+    expired: false
+  };
+
+  let obTimer = null;
+
+  function stopObTimer() {
+    if (obTimer) { clearInterval(obTimer); obTimer = null; }
+  }
+
+  /**
+   * ثانیه را به شکل ۰۲:۳۵ نشان می‌دهد.
+   * دو کاراکتر نامرئی ابتدا و انتها (LRI و PDI) جلوی به‌هم‌ریختن
+   * ترتیب عددها را در متن راست‌به‌چپ می‌گیرند.
+   */
+  function clockFa(totalSeconds) {
+    const s = Math.max(0, Math.round(totalSeconds));
+    const mm = num(Math.floor(s / 60)).padStart(2, "۰");
+    const ss = num(s % 60).padStart(2, "۰");
+    return "\u2066" + mm + ":" + ss + "\u2069";
+  }
+
+  function obSecondsLeft() {
+    return OB.expiresIn - (Date.now() - OB.sentAt) / 1000;
+  }
+
+  function obResendLeft() {
+    return OB.resendIn - (Date.now() - OB.sentAt) / 1000;
+  }
+
+  /** هر ثانیه فقط همان چند تکهٔ کوچک صفحه را به‌روز می‌کند */
+  function obTick() {
+    const left = obSecondsLeft();
+    const timer = $("#ob-timer");
+    const resend = $("#ob-resend");
+
+    if (timer) {
+      if (left > 0) {
+        timer.innerHTML = `${ICON("clock", 15)}<span>اعتبار کد: <b class="nums">${clockFa(left)}</b></span>`;
+        timer.className = "ob__timer" + (left <= 30 ? " is-low" : "");
+      } else {
+        timer.innerHTML = `${ICON("alert", 15)}<span>کد منقضی شد — کد تازه بگیرید</span>`;
+        timer.className = "ob__timer is-out";
+      }
+    }
+
+    if (resend) {
+      const wait = obResendLeft();
+      if (wait > 0) {
+        resend.disabled = true;
+        resend.textContent = `ارسال دوباره تا ${clockFa(wait)} دیگر`;
+      } else {
+        resend.disabled = false;
+        resend.textContent = "کد را دوباره بفرست";
+      }
+    }
+
+    if (left <= 0 && !OB.expired) {
+      OB.expired = true;
+      tgSafe.notify("warning");
+    }
+  }
 
   function onboardingSteps() {
     return S.requireCode ? ["phone", "code", "profile"] : ["phone", "profile"];
@@ -658,7 +726,7 @@
       <div class="ob__head">
         <div class="ob__ico">${ICON("user", 26)}</div>
         <h1 class="ob__t">خوش آمدید</h1>
-        <p class="ob__d">برای شروع، شمارهٔ موبایل خود را وارد کنید.<br />کارشناسان ما برای پیگیری سفارش با شما تماس می‌گیرند.</p>
+        <p class="ob__d">برای شروع، شمارهٔ موبایل خود را وارد کنید.</p>
       </div>
 
       <div class="field">
@@ -667,7 +735,7 @@
                inputmode="numeric" dir="ltr" autocomplete="tel"
                placeholder="09123456789" value="${esc(OB.phone)}" />
         ${obError()}
-        <div class="help">شمارهٔ خارج از ایران را با کد کشور وارد کنید. مثال: <span dir="ltr">+971501234567</span></div>
+        <div class="help">شمارهٔ همراه ایران، با ۰۹ شروع می‌شود.</div>
       </div>
 
       <p class="ob__note">با ادامه دادن، ${esc(CFG.brandName)} شمارهٔ شما را فقط برای پیگیری سفارش‌ها استفاده می‌کند.</p>`;
@@ -691,7 +759,9 @@
         ${OB.hint ? `<div class="help">${esc(OB.hint)}</div>` : ""}
       </div>
 
-      <button class="btn btn--ghost btn--block mt-8" data-act="ob-resend">کد را دوباره بفرست</button>
+      <div class="ob__timer" id="ob-timer"></div>
+
+      <button class="btn btn--ghost btn--block mt-8" id="ob-resend" data-act="ob-resend" disabled>کد را دوباره بفرست</button>
       <p class="ob__note">شماره: <span dir="ltr">${esc(OB.phone)}</span></p>`;
   }
 
@@ -719,6 +789,12 @@
   }
 
   function bindOnboarding() {
+    stopObTimer();
+    if (OB.step === "code") {
+      obTick();
+      obTimer = setInterval(obTick, 1000);
+    }
+
     const on = (id, fn) => { const el = $("#" + id); if (el) el.addEventListener("input", fn); };
     on("ob-phone", (e) => { OB.phone = e.target.value; });
     on("ob-code", (e) => { OB.code = e.target.value; });
@@ -741,6 +817,10 @@
         if (res.codeSent) {
           OB.step = "code";
           OB.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "";
+          OB.sentAt = Date.now();
+          OB.expiresIn = res.expiresInSeconds || 180;
+          OB.resendIn = res.resendAfterSeconds || 60;
+          OB.expired = false;
         } else {
           OB.step = "profile";
         }
@@ -773,6 +853,11 @@
     try {
       const res = await S.registerPhone(OB.phone);
       OB.hint = res.demoCode ? `حالت نمایشی: کد ${res.demoCode} است.` : "کد دوباره فرستاده شد.";
+      OB.sentAt = Date.now();
+      OB.expiresIn = res.expiresInSeconds || 180;
+      OB.resendIn = res.resendAfterSeconds || 60;
+      OB.expired = false;
+      OB.code = "";
       toast("کد دوباره فرستاده شد", "ok");
     } catch (err) {
       OB.error = err.message || "ارسال دوباره ممکن نشد.";
@@ -1356,7 +1441,7 @@
     if (act === "back") { tgSafe.tap(); goBack(); return; }
     if (act === "ob-next") { obNext(); return; }
     if (act === "ob-resend") { obResend(); return; }
-    if (act === "ob-back") { OB.step = "phone"; OB.error = ""; renderOnboarding(); return; }
+    if (act === "ob-back") { OB.step = "phone"; OB.error = ""; OB.code = ""; renderOnboarding(); return; }
     if (act === "next") { nextStep(); return; }
     if (act === "prev") { tgSafe.tap(); W.step--; W.errors = {}; render(); return; }
 

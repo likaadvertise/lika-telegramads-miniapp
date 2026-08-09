@@ -160,7 +160,11 @@ window.Store = (function () {
         body: JSON.stringify({ phone })
       });
       if (data.profile) profile = data.profile;
-      return { codeSent: Boolean(data.codeSent) };
+      return {
+        codeSent: Boolean(data.codeSent),
+        expiresInSeconds: data.expiresInSeconds || 180,
+        resendAfterSeconds: data.resendAfterSeconds || 60
+      };
     }
 
     // حالت نمایشی
@@ -169,7 +173,12 @@ window.Store = (function () {
     if (!requireCode) p.phoneVerified = true;
     saveLocalProfile(p);
     profile = p;
-    return { codeSent: requireCode, demoCode: requireCode ? DEMO_CODE : null };
+    return {
+      codeSent: requireCode,
+      demoCode: requireCode ? DEMO_CODE : null,
+      expiresInSeconds: 180,
+      resendAfterSeconds: 60
+    };
   }
 
   /** گام ۲ — بررسی کد تأیید */

@@ -183,7 +183,12 @@ export function issuePhoneCode(userId, phone) {
   const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60000).toISOString();
 
   qCodeSet.run(Number(userId), phone, hashCode(userId, code), expiresAt, now());
-  return { ok: true, code, expiresInSeconds: CODE_TTL_MINUTES * 60 };
+  return {
+    ok: true,
+    code,
+    expiresInSeconds: CODE_TTL_MINUTES * 60,
+    resendAfterSeconds: CODE_RESEND_SECONDS
+  };
 }
 
 /** کد واردشده را بررسی می‌کند */

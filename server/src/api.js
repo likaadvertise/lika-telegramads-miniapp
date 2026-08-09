@@ -168,12 +168,17 @@ export async function handleApi(req, res, url) {
       console.error("[register] ارسال کد ناموفق:", err.message);
       json(res, 502, {
         ok: false,
-        error: "ارسال کد به تلگرام شما ممکن نشد. مطمئن شوید ربات را بلاک نکرده‌اید."
+        error: "ارسال کد به تلگرام ممکن نشد. مینی‌اپ را ببندید، در چت ربات دستور /start را بزنید و دوباره تلاش کنید."
       });
       return true;
     }
 
-    json(res, 200, { ok: true, codeSent: true, expiresInSeconds: issued.expiresInSeconds });
+    json(res, 200, {
+      ok: true,
+      codeSent: true,
+      expiresInSeconds: issued.expiresInSeconds,
+      resendAfterSeconds: issued.resendAfterSeconds
+    });
     return true;
   }
 

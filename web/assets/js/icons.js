@@ -37,7 +37,8 @@ window.Icons = (function () {
     inbox: '<path d="M3.5 13.5h4l1.5 3h6l1.5-3h4"/><path d="M5.6 5.2 3.5 13.5v3.8a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-3.8L18.4 5.2a2 2 0 0 0-1.8-1.2H7.4a2 2 0 0 0-1.8 1.2z"/>',
     folder: '<path d="M3.5 7.5a2 2 0 0 1 2-2h3.3l2 2.5h7.7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
     help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.5a2.4 2.4 0 1 1 3.2 2.3c-.6.2-.9.8-.9 1.4v.4"/><path d="M12 16.8v.1"/>',
-    close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>'
+    close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>'
   };
 
   function icon(name, size) {
