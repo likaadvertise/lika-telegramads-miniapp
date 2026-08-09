@@ -14,11 +14,13 @@
   --text-faint:  #9aa3b2;
   --border:      #e3e7f0;
 
-  --brand:       #5b6ef5;
-  --brand-2:     #8b5cf6;
+  /* آبی برند Lika Network */
+  --brand:       #2540f2;
+  --brand-2:     #4c63ff;
   --brand-ink:   #ffffff;
-  --brand-soft:  rgba(91, 110, 245, .10);
-  --brand-grad:  linear-gradient(135deg, #5b6ef5 0%, #8b5cf6 55%, #a855f7 100%);
+  --brand-soft:  rgba(37, 64, 242, .10);
+  --brand-grad:  linear-gradient(135deg, #2540f2 0%, #3b54ff 55%, #5a73ff 100%);
+  --brand-glow:  rgba(37, 64, 242, .30);
 
   --success:     #0ca678;
   --success-soft:rgba(12, 166, 120, .12);
@@ -53,10 +55,11 @@
   --text-faint:  #6f7c96;
   --border:      #26314a;
 
-  --brand:       #7b8cff;
-  --brand-2:     #a78bfa;
-  --brand-soft:  rgba(123, 140, 255, .14);
-  --brand-grad:  linear-gradient(135deg, #4f5fe0 0%, #7c4ddb 55%, #9333ea 100%);
+  --brand:       #7c92ff;
+  --brand-2:     #9db0ff;
+  --brand-soft:  rgba(124, 146, 255, .15);
+  --brand-grad:  linear-gradient(135deg, #1f37d6 0%, #3450f0 55%, #5570ff 100%);
+  --brand-glow:  rgba(31, 55, 214, .40);
 
   --success:     #2dd4a7;
   --success-soft:rgba(45, 212, 167, .14);
@@ -144,10 +147,10 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .brandmark__logo {
   width: 38px; height: 38px; border-radius: 12px;
-  background: var(--brand-grad);
+  background: var(--brand);
   display: grid; place-items: center;
   color: #fff; font-weight: 800; font-size: 15px;
-  box-shadow: 0 6px 16px rgba(91, 110, 245, .35);
+  box-shadow: 0 6px 16px var(--brand-glow);
 }
 .brandmark__logo--img {
   object-fit: cover;
@@ -186,7 +189,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   padding: 18px;
   background: var(--brand-grad);
   color: #fff;
-  box-shadow: 0 14px 34px rgba(91, 110, 245, .32);
+  box-shadow: 0 14px 34px var(--brand-glow);
 }
 .hero::after {
   content: ""; position: absolute; inset: auto -40px -70px auto;
@@ -203,7 +206,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   height: 50px;
   border-radius: 15px;
   background: rgba(255, 255, 255, .96);
-  color: #3f3fa0;
+  color: #2540f2;
   font-weight: 800; font-size: 14.5px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform .12s ease;
@@ -254,7 +257,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   transition: transform .12s ease, opacity .15s ease;
 }
 .btn:active { transform: scale(.98); }
-.btn--primary { background: var(--brand-grad); color: #fff; box-shadow: 0 8px 20px rgba(91, 110, 245, .3); }
+.btn--primary { background: var(--brand-grad); color: #fff; box-shadow: 0 8px 20px var(--brand-glow); }
 .btn--outline { background: transparent; border-color: var(--border); }
 .btn--ghost { background: transparent; color: var(--brand); }
 .btn--block { width: 100%; }
