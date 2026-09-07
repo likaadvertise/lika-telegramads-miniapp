@@ -14,10 +14,16 @@
 set -euo pipefail
 
 APP_DIR="/opt/lika-ads"
-REPO="https://github.com/likaadvertise/lika-telegramads-miniapp.git"
+REPO="${REPO:-https://github.com/likanetworkservice-oss/lika-telegramads-miniapp.git}"
+BRANCH="${BRANCH:-main}"
 SERVICE="lika-ads"
 SVC_USER="lika"
 PORT="3000"
+
+# مخزن خصوصی است، پس برای برداشتن کد یک توکن گیت‌هاب لازم است.
+# توکن اینجا نگهداری می‌شود تا update.sh هم بعداً بتواند کد را به‌روز کند.
+CRED_DIR="/etc/lika-ads"
+CRED_FILE="${CRED_DIR}/git-credentials"
 
 red()  { printf "\033[31m%s\033[0m\n" "$*"; }
 grn()  { printf "\033[32m%s\033[0m\n" "$*"; }
@@ -45,8 +51,16 @@ echo
 read -rp "دامنه یا زیردامنهٔ سرور (مثلاً ads.lika.com): " DOMAIN
 [[ -z "${DOMAIN}" ]] && { red "دامنه اجباری است."; exit 1; }
 
-read -rp "توکن ربات از BotFather: " BOT_TOKEN
+# توکن‌ها هنگام تایپ روی صفحه نشان داده نمی‌شوند (کسی پشت سرتان نبیند)
+read -rsp "توکن ربات از BotFather: " BOT_TOKEN; echo
 [[ -z "${BOT_TOKEN}" ]] && { red "توکن اجباری است."; exit 1; }
+
+# اگر با  GH_TOKEN=...  اجرا شده باشد، دوباره پرسیده نمی‌شود
+GH_TOKEN="${GH_TOKEN:-}"
+if [[ -z "${GH_TOKEN}" ]]; then
+  read -rsp "توکن گیت‌هاب (برای برداشتن کد از مخزن خصوصی): " GH_TOKEN; echo
+fi
+[[ -z "${GH_TOKEN}" ]] && { red "توکن گیت‌هاب اجباری است."; exit 1; }
 
 read -rp "شناسهٔ عددی شما در تلگرام (از @userinfobot): " ADMIN_ID
 [[ -z "${ADMIN_ID}" ]] && { red "شناسه اجباری است."; exit 1; }
@@ -93,12 +107,32 @@ grn "      $(caddy version | head -1)"
 
 # ---------- ۵) کد پروژه ----------
 bld "[۴/۶] گرفتن کد پروژه…"
+
+# توکن گیت‌هاب را جایی می‌گذاریم که فقط root بتواند بخواند
+mkdir -p "${CRED_DIR}"
+chmod 700 "${CRED_DIR}"
+# فایل از همان لحظهٔ ساخت فقط برای root خواندنی است
+install -m 600 /dev/null "${CRED_FILE}"
+printf 'https://x-access-token:%s@github.com\n' "${GH_TOKEN}" > "${CRED_FILE}"
+HELPER="store --file=${CRED_FILE}"
+
 if [[ -d "${APP_DIR}/.git" ]]; then
-  git -C "${APP_DIR}" -c safe.directory="${APP_DIR}" pull --ff-only
+  git -C "${APP_DIR}" -c safe.directory="${APP_DIR}" -c credential.helper="${HELPER}" \
+      pull --ff-only
 else
   rm -rf "${APP_DIR}"
-  git clone --depth 1 "${REPO}" "${APP_DIR}"
+  if ! git -c credential.helper="${HELPER}" \
+       clone --depth 1 --branch "${BRANCH}" "${REPO}" "${APP_DIR}"; then
+    red "کد پروژه برداشته نشد."
+    echo "  محتمل‌ترین دلیل‌ها:"
+    echo "   • توکن گیت‌هاب اشتباه است یا اجازهٔ خواندن این مخزن را ندارد"
+    echo "   • شاخهٔ «${BRANCH}» هنوز در مخزن ساخته نشده است"
+    exit 1
+  fi
 fi
+
+# آدرس مخزن بدون توکن ذخیره می‌شود؛ توکن فقط در فایل بالا می‌ماند
+git -C "${APP_DIR}" -c safe.directory="${APP_DIR}" config credential.helper "${HELPER}"
 
 mkdir -p "${APP_DIR}/server/data"
 
@@ -119,6 +153,10 @@ SERVE_WEBAPP=1
 EOF
 chmod 600 "${APP_DIR}/server/.env"
 chown -R "${SVC_USER}:${SVC_USER}" "${APP_DIR}"
+
+# پوشهٔ .git دست سرویس نباشد؛ فقط root با آن کار می‌کند (update.sh)
+chown -R root:root "${APP_DIR}/.git"
+chmod -R go-rwx "${APP_DIR}/.git"
 grn "      کد و تنظیمات آماده شد"
 
 # ---------- ۶) سرویس دائمی ----------

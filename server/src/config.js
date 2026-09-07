@@ -64,6 +64,10 @@ const idList = (key) =>
 /* ---------- تنظیمات نهایی ---------- */
 export const config = {
   botToken: str("BOT_TOKEN"),
+
+  /* توکن ربات دوم — فقط برای مینی‌اپ مدیریت (CRM).
+     خالی بگذارید اگر CRM را روی همان ربات اصلی باز می‌کنید. */
+  crmBotToken: str("CRM_BOT_TOKEN"),
   webappUrl: str("WEBAPP_URL").replace(/\/+$/, ""),
   adminChatId: str("ADMIN_CHAT_ID"),
   adminIds: idList("ADMIN_IDS"),
@@ -85,13 +89,69 @@ export const config = {
   maxCpmUsd: Number(str("MAX_CPM_USD", "6")),
   adTextMaxLength: int("AD_TEXT_MAX_LENGTH", 160),
 
+  // سقف کلیدواژه برای تبلیغ «جستجو» و حداقل تعداد کانال برای تبلیغ «کانال».
+  // باید با web/assets/js/config.js یکی بماند.
+  maxKeywords: int("MAX_KEYWORDS", 10),
+  minChannels: int("MIN_CHANNELS", 5),
+
   // سقف تعداد سفارش هر کاربر در شبانه‌روز
   maxOrdersPerDay: int("MAX_ORDERS_PER_DAY", 20),
+
+  /* ---------- پیامک ----------
+     تا وقتی SMS_PROVIDER خالی باشد، پیامکی فرستاده نمی‌شود و کد
+     مثل قبل در تلگرام می‌آید. توضیح کامل در server/src/sms.js
+  */
+  smsProvider: str("SMS_PROVIDER").toLowerCase(),   // kavenegar | smsir | custom
+  smsApiKey: str("SMS_API_KEY"),
+  smsTemplate: str("SMS_TEMPLATE"),
+  smsBaseUrl: str("SMS_BASE_URL"),
+  smsCodeParam: str("SMS_CODE_PARAM"),
+  smsAuthHeader: str("SMS_AUTH_HEADER"),
+  smsBody: str("SMS_BODY"),
+
+  /* ---------- ورود به پنل مدیریت از راه وب ----------
+     برای باز کردن پنل در مرورگر لپ‌تاپ، بدون تلگرام.
+     تا وقتی هر دو خالی باشند، ورود با رمز خاموش است و پنل فقط از
+     داخل تلگرام باز می‌شود (همان رفتار قبلی). */
+  adminUser: str("ADMIN_USER"),
+  adminPassword: str("ADMIN_PASSWORD"),
+  // اختیاری. اگر خالی باشد، از روی رمز و توکن ربات ساخته می‌شود.
+  adminSessionSecret: str("ADMIN_SESSION_SECRET"),
+
+  // چند بار رمز غلط در ۱۰ دقیقه تحمل شود، قبل از قفل موقت.
+  // برای رمز بلند، عدد بالا هم خطری ندارد؛ حدس زدن با ۲۰ تلاش در
+  // ده دقیقه عملاً ناممکن است.
+  adminLoginMaxAttempts: int("ADMIN_LOGIN_MAX_ATTEMPTS", 20),
+
+  /* ---------- پرداخت کارت‌به‌کارت ----------
+     تا وقتی درگاه پرداخت نداریم، مشتری مبلغ بسته را به این کارت
+     می‌ریزد و رسیدش را برای پشتیبانی می‌فرستد.
+     اگر شمارهٔ کارت خالی باشد، مینی‌اپ به‌جای کارت می‌گوید
+     «برای پرداخت با پشتیبانی تماس بگیرید». */
+  payCardNumber: str("PAY_CARD_NUMBER"),
+  payCardHolder: str("PAY_CARD_HOLDER"),
+  payCardBank: str("PAY_CARD_BANK"),
+
+  /* مبالغ بزرگ را بانک‌ها با کارت‌به‌کارت قبول نمی‌کنند، پس از این
+     مبلغ به بالا شمارهٔ شبا نشان داده می‌شود. اگر شبا خالی باشد،
+     همان کارت نشان داده می‌شود — بهتر از کادر خالی. */
+  payShebaNumber: str("PAY_SHEBA_NUMBER"),
+  payShebaHolder: str("PAY_SHEBA_HOLDER"),
+  payShebaBank: str("PAY_SHEBA_BANK"),
+  payShebaMinToman: Number(str("PAY_SHEBA_MIN_TOMAN", "10000000")) || 10000000,
+
 
   // آیا در ثبت‌نام، کد تأیید به تلگرام کاربر فرستاده شود؟
   //   1 = بله (شماره → کد → نام)
   //   0 = خیر (شماره → نام)  ← مرحلهٔ کمتر، لید بیشتر
-  requirePhoneCode: bool("REQUIRE_PHONE_CODE", true)
+  requirePhoneCode: bool("REQUIRE_PHONE_CODE", true),
+
+  /* ---------- سفارش‌های سایت (likaads.com) ----------
+     سایت وردپرسی از راه /api/website-lead سفارش تلگرام‌ادز می‌فرستد،
+     نه از داخل تلگرام — پس امضای initData را ندارد. به‌جایش این رمز
+     مشترک را در هدر X-Website-Secret می‌فرستد. رمزی طولانی و تصادفی
+     بگذارید و همان را در سایت وردپرسی هم وارد کنید. */
+  websiteApiSecret: str("WEBSITE_API_SECRET")
 };
 
 export function isAdmin(userId) {
@@ -124,8 +184,21 @@ export function checkConfig() {
     warnings.push("ADMIN_IDS خالی است؛ هیچ‌کس نمی‌تواند وضعیت سفارش‌ها را از داخل تلگرام تغییر دهد.");
   }
 
+  if (config.crmBotToken && !/^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(config.crmBotToken)) {
+    errors.push("CRM_BOT_TOKEN معتبر به نظر نمی‌رسد. باید چیزی شبیه 1234567890:AAF... باشد.");
+  }
+
   if (config.botMode === "webhook" && !config.webhookSecret) {
     errors.push("در حالت webhook باید WEBHOOK_SECRET را پر کنید.");
+  }
+
+  // تلگرام برای این رمز فقط حروف انگلیسی، عدد، خط تیره و زیرخط را می‌پذیرد
+  if (config.webhookSecret && !/^[A-Za-z0-9_-]{1,256}$/.test(config.webhookSecret)) {
+    errors.push(
+      "WEBHOOK_SECRET کاراکتر غیرمجاز دارد. تلگرام فقط حروف انگلیسی (a-z و A-Z)، " +
+      "عدد (0-9)، خط تیره (-) و زیرخط (_) را قبول می‌کند — حداکثر ۲۵۶ کاراکتر. " +
+      "نقطه، فاصله، حرف فارسی و علائم دیگر مجاز نیستند."
+    );
   }
 
   if (!["polling", "webhook"].includes(config.botMode)) {

@@ -18,7 +18,13 @@ const faDate = (iso) => {
   } catch { return ""; }
 };
 
-const estViews = (budget, cpm) => (cpm > 0 ? Math.round((budget / cpm) * 1000) : 0);
+/** مثل نسخهٔ کلاینت — بدون صفرهای اضافه («۱۵ میلیون تومان») */
+export function tomanPrice(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000000) return fa(Math.round((v / 1000000) * 100) / 100) + " میلیون تومان";
+  if (v >= 1000) return fa(Math.round((v / 1000) * 10) / 10) + " هزار تومان";
+  return fa(v) + " تومان";
+}
 
 function userLine(user) {
   const name = esc([user.first_name, user.last_name].filter(Boolean).join(" ") || "بدون نام");
@@ -33,29 +39,39 @@ export function adminOrderMessage(campaign, user) {
     `<b>سفارش جدید</b> — <code>${esc(campaign.id)}</code>`,
     "",
     `<b>مشتری:</b> ${userLine(user)}`,
+    ...(campaign.adTitle ? [`<b>عنوان تبلیغ:</b> ${esc(campaign.adTitle)}`] : []),
     `<b>برند:</b> ${esc(campaign.target.brand)}`,
     `<b>مقصد:</b> ${esc(TARGET_LABELS[campaign.target.type])} — <code>${esc(campaign.target.url)}</code>`,
     ...(campaign.target.channelTitle
       ? [`<b>نام مقصد در تلگرام:</b> ${esc(campaign.target.channelTitle)}`]
       : []),
-    "",
-    `<b>متن تبلیغ:</b>`,
-    `<blockquote>${esc(campaign.creative.text)}</blockquote>`,
-    "",
-    `<b>کشورها:</b> ${esc(t.countries.map(countryName).join("، ") || "—")}`,
-    `<b>زبان‌ها:</b> ${esc(t.languages.join("، ") || "همه")}`,
-    `<b>موضوعات:</b> ${esc(t.topics.map(topicName).join("، ") || "—")}`
+    ""
   ];
 
-  if (t.channels.length) {
-    lines.push(`<b>کانال‌های خاص:</b> <code>${esc(t.channels.join(" "))}</code>`);
+  /* تبلیغ جستجو در تلگرام متن ندارد؛ به‌جایش کلیدواژه دارد. */
+  if (campaign.creative.text) {
+    lines.push(`<b>متن تبلیغ:</b>`, `<blockquote>${esc(campaign.creative.text)}</blockquote>`);
   }
+
+  if (t.keywords?.length) {
+    lines.push(`<b>کلیدواژه‌های جستجو:</b> <code>${esc(t.keywords.join("، "))}</code>`, "");
+  }
+
+  /* کشور/زبان/موضوع فقط در سفارش‌های قدیمی هستند — دیگر پرسیده نمی‌شوند */
+  if (t.countries.length) lines.push(`<b>کشورها:</b> ${esc(t.countries.map(countryName).join("، "))}`);
+  if (t.languages.length) lines.push(`<b>زبان‌ها:</b> ${esc(t.languages.join("، "))}`);
+  if (t.topics.length) lines.push(`<b>موضوعات:</b> ${esc(t.topics.map(topicName).join("، "))}`);
+
+  lines.push(
+    t.channels.length
+      ? `<b>کانال‌های هدف:</b> <code>${esc(t.channels.join(" "))}</code>`
+      : `<b>کانال‌های هدف:</b> مشتری انتخاب نکرده — کارشناس باید بچیند.`
+  );
 
   lines.push(
     "",
-    `<b>بودجه:</b> ${fa(campaign.budget.amountUsd)} دلار`,
-    `<b>CPM:</b> ${fa(campaign.budget.cpmUsd)} دلار`,
-    `<b>بازدید تخمینی:</b> ${fa(estViews(campaign.budget.amountUsd, campaign.budget.cpmUsd))}`,
+    `<b>مبلغ:</b> ${tomanPrice(campaign.budget.priceToman)}`,
+    `<b>بازدید بسته:</b> ${fa(campaign.budget.packageViews)}`,
     `<b>زمان شروع:</b> ${esc(START_LABELS[campaign.budget.startWhen] || "—")}`
   );
 
@@ -73,9 +89,8 @@ export function adminKeyboard(code) {
   const btn = (label, status) => ({ text: label, callback_data: `st|${code}|${status}` });
   return {
     inline_keyboard: [
-      [btn("در حال بررسی", "review"), btn("تأیید شده", "approved")],
-      [btn("شروع اجرا", "running"), btn("نیاز به اصلاح", "rejected")],
-      [btn("پایان‌یافته", "done")]
+      [btn("تأیید شده", "approved"), btn("شروع اجرا", "running")],
+      [btn("نیاز به اصلاح", "rejected"), btn("پایان‌یافته", "done")]
     ]
   };
 }
@@ -86,7 +101,6 @@ export function customerStatusMessage(campaign) {
   const status = `وضعیت جدید: <b>${esc(STATUS_LABELS[campaign.status])}</b>`;
 
   const notes = {
-    review: "کارشناس ما در حال بررسی کمپین شماست. به‌زودی نتیجه را اعلام می‌کنیم.",
     approved: "کمپین شما تأیید شد. برای هماهنگی تسویه با شما تماس می‌گیریم.",
     running: "کمپین شما شروع شد و در حال نمایش به مخاطبان است.",
     done: "اجرای کمپین به پایان رسید. گزارش عملکرد در پنل قابل مشاهده است.",
@@ -106,7 +120,7 @@ export function ordersListMessage(campaigns) {
   const rows = campaigns.slice(0, 10).map((c) => {
     return [
       `<code>${esc(c.id)}</code> — <b>${esc(c.target.brand)}</b>`,
-      `${esc(STATUS_LABELS[c.status])} • ${fa(c.budget.amountUsd)} دلار • ${faDate(c.createdAt)}`
+      `${esc(STATUS_LABELS[c.status])} • ${tomanPrice(c.budget.priceToman)} • ${faDate(c.createdAt)}`
     ].join("\n");
   });
 
@@ -142,12 +156,12 @@ export function newLeadMessage(profile, user) {
 /* ---------- پیام خوش‌آمد ---------- */
 export function welcomeMessage(name, brandName = "Lika Ads") {
   return [
-    `سلام ${esc(name)}! به <b>${esc(brandName)}</b> خوش آمدید.`,
+    `سلام ${esc(name)} 👋`,
     "",
-    "ثبت سفارش تبلیغ، انتخاب مخاطب هدف، پیگیری وضعیت کمپین و آمار عملکرد —",
-    "همه‌چیز داخل پنل اختصاصی شماست.",
+    `به <b>${esc(brandName)}</b> خوش آمدید 🚀`,
+    "تبلیغ در تلگرام، از ثبت سفارش تا گزارش عملکرد 📊",
     "",
-    "برای هر کاری، از دکمه‌های پایین صفحه استفاده کنید."
+    "برای شروع، دکمهٔ پایین را بزنید 👇"
   ].join("\n");
 }
 
@@ -162,4 +176,47 @@ export function helpMessage(supportUsername) {
     "",
     supportUsername ? `برای گفت‌وگو با کارشناس: @${esc(supportUsername)}` : ""
   ].join("\n").trim();
+}
+
+/* ---------- خروجی اکسل (CSV) ----------
+   با BOM شروع می‌شود تا اکسل، فارسی را درست نشان بدهد و حروف
+   به‌هم‌ریخته نشوند. */
+export function ordersCsv(campaigns, users) {
+  const byId = new Map(users.map((u) => [Number(u.id), u]));
+  const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+
+  const head = [
+    "کد سفارش", "عنوان تبلیغ", "وضعیت", "نام مشتری", "شماره تماس", "ایمیل", "آیدی تلگرام",
+    "برند", "نوع", "مقصد", "مبلغ (تومان)", "بازدید بسته", "عکس کانال",
+    "متن تبلیغ", "کلیدواژه‌ها", "کانال‌های هدف", "بازدید", "کلیک", "اعضای جدید", "تاریخ ثبت"
+  ];
+
+  const rows = campaigns.map((c) => {
+    const o = byId.get(Number(c.userId));
+    const t = c.targeting || {};
+    return [
+      c.id,
+      c.adTitle,
+      STATUS_LABELS[c.status] || c.status,
+      [o?.firstName, o?.lastName].filter(Boolean).join(" "),
+      o?.phone,
+      o?.email,
+      o?.username ? "@" + o.username : "",
+      c.target?.brand,
+      TARGET_LABELS[c.target?.type] || c.target?.type,
+      c.target?.url,
+      c.budget?.priceToman,
+      c.budget?.packageViews,
+      c.creative?.showPicture ? "بله" : "خیر",
+      c.creative?.text,
+      (t.keywords || []).join(" | "),
+      (t.channels || []).join(" "),
+      c.stats?.views,
+      c.stats?.clicks,
+      c.stats?.joins || 0,
+      faDate(c.createdAt)
+    ].map(cell).join(",");
+  });
+
+  return "﻿" + [head.map(cell).join(","), ...rows].join("\n");
 }

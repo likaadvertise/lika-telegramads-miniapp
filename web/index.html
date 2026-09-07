@@ -9,12 +9,18 @@
   <meta name="description" content="پنل ثبت سفارش تبلیغات Telegram Ads — Lika Network" />
   <title>Lika Ads — پنل تبلیغات تلگرام</title>
 
-  <!-- کتابخانه رسمی تلگرام برای Mini App -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!--
+    پل ارتباطی با تلگرام — نسخهٔ محلی.
+    قبلاً این فایل از telegram.org گرفته می‌شد، ولی آن دامنه در ایران
+    در دسترس نیست و وقتی بارگذاری نمی‌شد، اپ به «حالت نمایشی» می‌افتاد
+    و سفارش‌ها ثبت نمی‌شدند. حالا از خود سرور می‌آید و به شبکهٔ بیرون
+    وابسته نیست. توضیح کامل داخل همین فایل است.
+  -->
+  <script src="./assets/js/tg-webapp.js?v=63"></script>
 
   <!-- فونت فارسی وزیرمتن — داخل پروژه ذخیره شده، بدون نیاز به Google Fonts -->
-  <link rel="stylesheet" href="./assets/css/fonts.css?v=7" />
-  <link rel="stylesheet" href="./assets/css/app.css?v=7" />
+  <link rel="stylesheet" href="./assets/css/fonts.css?v=63" />
+  <link rel="stylesheet" href="./assets/css/app.css?v=63" />
 </head>
 <body>
   <div class="app">
@@ -25,9 +31,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="./assets/js/icons.js?v=7"></script>
-  <script src="./assets/js/config.js?v=7"></script>
-  <script src="./assets/js/store.js?v=7"></script>
-  <script src="./assets/js/app.js?v=7"></script>
+  <script src="./assets/js/icons.js?v=63"></script>
+  <script src="./assets/js/config.js?v=63"></script>
+  <script src="./assets/js/store.js?v=63"></script>
+  <script src="./assets/js/app.js?v=63"></script>
 </body>
 </html>

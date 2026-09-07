@@ -10,6 +10,7 @@ import { handleApi } from "./api.js";
 import { serveStatic } from "./static.js";
 import { handleUpdate, startPolling } from "./bot.js";
 import { setupBot, tryCall } from "./telegram.js";
+import { initDb, closeDb } from "./db.js";
 
 /* ---------- ۱) بررسی نسخهٔ Node ---------- */
 const [major, minor] = process.versions.node.split(".").map(Number);
@@ -92,6 +93,15 @@ server.listen(config.port, async () => {
   console.log(`\n✔ سرور روی پورت ${config.port} بالا آمد`);
   console.log(`  مینی‌اپ: ${config.webappUrl}`);
 
+  // دیتابیس را همین اول آماده می‌کنیم تا اگر مشکلی هست، همان لحظه معلوم شود
+  try {
+    const kind = await initDb();
+    console.log(`✔ دیتابیس آماده است (${kind})`);
+  } catch (err) {
+    console.error("\n✖ اتصال به دیتابیس ممکن نشد:", err.message);
+    console.error("  اگر POSTGRES_URL گذاشته‌اید، درستی آن را بررسی کنید.\n");
+  }
+
   try {
     const me = await setupBot();
     console.log(`✔ ربات متصل شد: @${me.username}`);
@@ -120,7 +130,10 @@ server.listen(config.port, async () => {
 function shutdown(signal) {
   console.log(`\n${signal} — در حال خاموش کردن…`);
   if (stopPolling) stopPolling();
-  server.close(() => process.exit(0));
+  server.close(async () => {
+    await closeDb().catch(() => {});
+    process.exit(0);
+  });
   setTimeout(() => process.exit(0), 3000).unref();
 }
 

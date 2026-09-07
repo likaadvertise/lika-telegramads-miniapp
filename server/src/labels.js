@@ -8,7 +8,6 @@
 
 export const STATUS_LABELS = {
   pending: "در انتظار بررسی",
-  review: "در حال بررسی",
   approved: "تأیید شده",
   running: "در حال اجرا",
   done: "پایان‌یافته",

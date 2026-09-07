@@ -141,6 +141,11 @@ ul { margin: 0; padding: 0; list-style: none; }
   transition: transform .12s ease, background .15s ease;
 }
 .iconbtn:active { transform: scale(.93); }
+.iconbtn--label {
+  width: auto; flex: 0 0 auto;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; font-size: 13px; font-weight: 700;
+}
 
 .brandmark {
   display: flex; align-items: center; gap: 9px; flex: 1;
@@ -196,9 +201,19 @@ ul { margin: 0; padding: 0; list-style: none; }
   width: 190px; height: 190px; border-radius: 50%;
   background: rgba(255, 255, 255, .13);
 }
+/* سلام و نام کنار هم در یک خط، بالای کارت */
+.hero__greet {
+  position: relative; z-index: 2;
+  display: flex; align-items: baseline; gap: 5px;
+  flex-wrap: wrap;
+}
 .hero__hi { font-size: 12.5px; opacity: .9; }
-.hero__name { font-size: 19px; font-weight: 800; margin-top: 2px; }
-.hero__desc { font-size: 12.5px; opacity: .92; margin-top: 6px; max-width: 88%; }
+.hero__name { font-size: 15px; font-weight: 800; }
+.hero__desc {
+  position: relative; z-index: 2;
+  font-size: 12.5px; opacity: .92;
+  margin-top: 6px; max-width: 88%;
+}
 .hero__cta {
   position: relative; z-index: 2;
   margin-top: 16px;
@@ -259,6 +274,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn:active { transform: scale(.98); }
 .btn--primary { background: var(--brand-grad); color: #fff; box-shadow: 0 8px 20px var(--brand-glow); }
 .btn--outline { background: transparent; border-color: var(--border); }
+.btn--danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
 .btn--ghost { background: transparent; color: var(--brand); }
 .btn--block { width: 100%; }
 .btn--sm { height: 38px; font-size: 12.5px; border-radius: 11px; padding: 0 13px; }
@@ -397,66 +413,121 @@ ul { margin: 0; padding: 0; list-style: none; }
 .step-head__t { font-size: 17px; font-weight: 800; }
 .step-head__d { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
 
-/* ---------- ۱۲) پیش‌نمایش تبلیغ (شبیه پیام اسپانسری تلگرام) ---------- */
-.adprev {
-  border-radius: var(--radius);
-  padding: 14px;
+/* ---------- ۱۲) پیش‌نمایش تبلیغ (عین پیام اسپانسری تلگرام) ---------- */
+/* رنگ‌های این بخش عمداً ثابت‌اند و از تم اپ پیروی نمی‌کنند،
+   چون باید همان چیزی دیده شود که مخاطب داخل تلگرام می‌بیند. */
+/* کادر شناسایی کانال، زیر فیلد آدرس */
+.chatchip:empty { display: none; }
+.chatchip {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; padding: 8px 10px;
+  border-radius: var(--radius-xs);
   background: var(--surface-2);
-  border: 1px dashed var(--border);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  animation: screen-in .2s ease both;
 }
-.adprev__label { font-size: 11px; color: var(--text-faint); margin-bottom: 9px; font-weight: 600; }
-
-/* خودِ پیام اسپانسری */
-.tgad {
+.chatchip__ava {
   position: relative;
-  border-radius: 12px;
-  padding: 10px 13px 0;
-  background: var(--brand-soft);
-  border-inline-start: 3px solid var(--brand);
+  width: 26px; height: 26px; flex: 0 0 26px;
+  border-radius: 8px; overflow: hidden;
+  display: grid; place-items: center;
+  background: var(--brand); color: #fff;
+  font-weight: 800; font-size: 12px;
+}
+.chatchip__ava-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.chatchip__name { font-weight: 700; flex: 1; word-break: break-word; }
+.chatchip__ok { display: inline-flex; align-items: center; gap: 3px; color: var(--success); font-weight: 600; }
+.chatchip__miss { display: inline-flex; align-items: center; gap: 5px; color: var(--warn); }
+.chatchip__dim { display: inline-flex; align-items: center; gap: 5px; color: var(--text-dim); }
+
+.adprev { margin-top: 4px; }
+.adprev__label { font-size: 11px; color: var(--text-faint); margin-bottom: 8px; font-weight: 600; }
+
+/* =========================================================
+   پیش‌نمایش تبلیغ — بازسازی چیزی که مخاطب در تلگرام می‌بیند
+   ---------------------------------------------------------
+   عمداً از پوستهٔ روشن یا تیرهٔ خود اپ پیروی نمی‌کند: این کادر
+   قرار است تلگرام را نشان دهد، نه اپ ما را. پس همیشه همان
+   کاغذدیواری سبز و حباب سفید تلگرام است.
+   ========================================================= */
+.tgchat {
+  --tg-accent: #d8386a;   /* رنگی که تلگرام برای پیام‌های تبلیغی می‌گذارد */
+  --tg-bubble: #fff;
+  --tg-ink: #101418;
+  position: relative;
+  border-radius: var(--radius-sm);
+  padding: 20px 16px;
+  background-color: #a9cf9c;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23214a1c' stroke-opacity='.13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='20' cy='20' r='8'/%3E%3Cpath d='M60 16c4-6 12-2 12 4 0 6-8 10-12 14-4-4-12-8-12-14 0-6 8-10 12-4z'/%3E%3Cpath d='M98 28l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z'/%3E%3Crect x='12' y='64' width='16' height='16' rx='4'/%3E%3Cpath d='M54 68c9 0 15 7 15 15M54 83h15'/%3E%3Ccircle cx='98' cy='76' r='9'/%3E%3Cpath d='M28 104c6-8 16-8 22 0'/%3E%3Cpath d='M78 98l9 9-9 9-9-9z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
   overflow: hidden;
 }
 
-.tgad__head { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+/* حبابک پیام — سفید، با دُم گوشهٔ پایین سمت چپ، مثل پیام‌های دریافتی */
+.tgbubble {
+  position: relative;
+  background: var(--tg-bubble);
+  border-radius: 12px;
+  border-end-start-radius: 4px;
+  padding: 8px 10px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+}
+.tgbubble::after {
+  content: "";
+  position: absolute;
+  left: -6px; bottom: 0;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 0 0 13px 8px;
+  border-color: transparent transparent var(--tg-bubble) transparent;
+}
+
+.tgad__head { display: flex; align-items: center; gap: 7px; min-height: 40px; }
 .tgad__ad {
-  font-size: 12px; font-weight: 800; color: var(--brand);
-  letter-spacing: .2px;
+  font-size: 13px; font-weight: 800; color: var(--tg-accent);
+  direction: ltr; letter-spacing: .2px;
 }
 .tgad__what {
-  font-size: 10.5px; font-weight: 600;
-  color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
-  padding: 2px 7px; border-radius: 99px;
-  direction: ltr;
+  font-size: 10.5px; font-weight: 600; direction: ltr;
+  color: var(--tg-accent);
+  background: rgba(216, 56, 106, .12);
+  padding: 2px 8px; border-radius: 99px;
 }
 
 .tgad__avawrap { margin-inline-start: auto; display: inline-flex; }
 .tgad__ava {
-  width: 34px; height: 34px; border-radius: 9px;
+  width: 40px; height: 40px; border-radius: 11px;
   background: var(--brand); color: #fff;
   display: grid; place-items: center;
-  font-weight: 800; font-size: 14px;
+  font-weight: 800; font-size: 16px;
   object-fit: cover;
 }
 .tgad__ava--img { display: block; }
 
 .tgad__title {
-  font-size: 14px; font-weight: 800; color: var(--brand);
-  line-height: 1.6;
+  font-size: 14.5px; font-weight: 800; color: var(--tg-accent);
+  line-height: 1.6; margin-top: 1px;
   word-break: break-word;
 }
 .tgad__text {
-  font-size: 13px; line-height: 1.85; margin-top: 3px; padding-bottom: 10px;
+  font-size: 13px; line-height: 1.9; margin-top: 3px; padding-bottom: 10px;
   white-space: pre-wrap; word-break: break-word;
-  color: var(--text);
+  color: var(--tg-ink);
 }
-.tgad__text.is-empty { color: var(--text-faint); }
+.tgad__text.is-empty { color: rgba(16, 20, 24, .45); }
 
 .tgad__btn {
-  margin: 0 -13px; padding: 11px;
-  text-align: center;
-  font-size: 12.5px; font-weight: 800;
-  color: var(--brand);
-  border-top: 1px solid color-mix(in srgb, var(--brand) 22%, transparent);
+  margin-inline: -10px;
+  padding: 11px;
+  text-align: center; direction: ltr;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .7px;
+  color: var(--tg-accent);
+  border-top: 1px solid rgba(0, 0, 0, .09);
 }
 
 /* ---------- ۱۳) لیست کمپین‌ها ---------- */
@@ -602,13 +673,17 @@ ul { margin: 0; padding: 0; list-style: none; }
   max-width: 520px; margin-inline: auto;
   height: calc(var(--tab-h) + var(--safe-b));
   padding-bottom: var(--safe-b);
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  /* flex به‌جای grid با ستون‌های ثابت: پنل CRM سه تب دارد و اپ مشتری
+     چهار تا. با ستون ثابت، تب‌ها کج و یک‌طرفه می‌افتادند. */
+  display: flex;
   background: var(--surface);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
 }
+.tabbar:empty { display: none; }
 .tab {
+  flex: 1 1 0; min-width: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   font-size: 10.5px; font-weight: 600; color: var(--text-faint);
   transition: color .15s ease;
@@ -690,6 +765,17 @@ ul { margin: 0; padding: 0; list-style: none; }
   font-size: 12px; font-weight: 600; line-height: 1.6;
 }
 
+/* توضیح آرام — خبر است، نه هشدار (مثلاً «تبلیغ جستجو متن ندارد») */
+.notice--soft {
+  align-items: flex-start;
+  background: var(--info-soft); color: var(--info);
+  font-weight: 500;
+}
+.notice--soft .ic { flex: 0 0 auto; margin-top: 2px; }
+
+/* برچسبی که فقط نشان می‌دهد، کلیک‌شدنی نیست */
+.chip.is-static { cursor: default; pointer-events: none; }
+
 /* ---------- ۲۲.۵) آیکون‌ها ---------- */
 .ic { display: block; flex: 0 0 auto; }
 .tab__ico { display: grid; place-items: center; height: 22px; }
@@ -698,6 +784,201 @@ ul { margin: 0; padding: 0; list-style: none; }
 .empty__ico .ic, .service__ico .ic { opacity: .95; }
 .service__ico { color: var(--brand); }
 .empty__ico { color: var(--brand); }
+
+/* ---------- ۲۲.۱) داشبورد عملکرد ---------- */
+.perf__grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
+.perf__cell { text-align: center; }
+.perf__ico {
+  width: 28px; height: 28px; margin: 0 auto 6px;
+  border-radius: 9px; background: var(--surface-3); color: var(--brand);
+  display: grid; place-items: center;
+}
+.perf__num {
+  font-size: 14.5px; font-weight: 800; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -.2px;
+}
+.perf__lbl { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; }
+
+.perf__bar {
+  display: flex; gap: 2px; height: 6px; margin-top: 16px;
+  border-radius: 99px; overflow: hidden;
+}
+.perf__seg { display: block; min-width: 6px; border-radius: 99px; }
+
+.perf__legend {
+  display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px;
+}
+.perf__leg {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-dim); white-space: nowrap;
+}
+.perf__dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+
+.seg--pending  { background: var(--warn); }
+.seg--review   { background: var(--info); }
+.seg--approved { background: var(--brand); }
+.seg--running  { background: var(--success); }
+.seg--done     { background: var(--text-faint); }
+.seg--rejected { background: var(--danger); }
+
+/* ---------- ۲۲.۲) «چطور کار می‌کند» ---------- */
+/* نام‌ها عمداً howto است، نه step —‌ کلاس‌های .steps/.step قبلاً برای
+   نوار پیشرفت فرم ثبت سفارش استفاده شده‌اند. */
+.howto__row { display: flex; align-items: flex-start; gap: 11px; }
+.howto__row + .howto__row { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.howto__ico {
+  width: 34px; height: 34px; flex: 0 0 auto;
+  border-radius: 11px; background: var(--brand-soft); color: var(--brand);
+  display: grid; place-items: center;
+}
+.howto__body { min-width: 0; }
+.howto__t {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--text);
+}
+.howto__n {
+  width: 18px; height: 18px; flex: 0 0 auto;
+  border-radius: 50%; background: var(--surface-3); color: var(--text-dim);
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 800;
+}
+.howto__d { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.7; }
+
+/* ---------- ۲۲.۶) کارت پیش‌نویس نیمه‌تمام (صفحهٔ خانه) ----------
+   عمداً کم‌رنگ‌تر از hero است: یادآوری است، نه فراخوان اصلی. */
+.draft { border-color: var(--brand-soft); background: var(--surface); }
+.draft__top { display: flex; align-items: flex-start; gap: 10px; }
+.draft__ico {
+  width: 34px; height: 34px; flex: 0 0 auto;
+  border-radius: 11px; background: var(--brand-soft); color: var(--brand);
+  display: grid; place-items: center;
+}
+.draft__t { font-size: 13.5px; font-weight: 700; }
+.draft__name {
+  font-size: 12px; color: var(--text-dim); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* نوار پیشرفت همان نوار فرم است، فقط بدون فاصلهٔ بالای آن */
+.draft__steps { padding: 12px 0 0; }
+.draft__when {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 8px; font-size: 11.5px; color: var(--text-dim);
+}
+.draft__ask { margin-top: 12px; font-size: 12px; color: var(--text-dim); }
+.draft__del { background: var(--danger-soft); color: var(--danger); }
+
+/* ---------- ۲۲.۷) بسته‌های آماده ---------- */
+.packs { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.pack {
+  position: relative; text-align: center;
+  padding: 15px 10px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color .15s ease, transform .12s ease;
+}
+.pack:active { transform: scale(.985); }
+.pack.is-on { border-color: var(--brand); background: var(--brand-soft); }
+
+.pack__views { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+.pack__n { font-size: 19px; font-weight: 800; color: var(--text); letter-spacing: -.3px; }
+.pack__u { font-size: 11.5px; color: var(--text-dim); }
+.pack__price {
+  margin-top: 7px; font-size: 12.5px; font-weight: 700; color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+.pack__tick {
+  position: absolute; inset-block-start: 8px; inset-inline-end: 9px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--brand); color: #fff;
+  font-size: 11px; line-height: 18px;
+  opacity: 0; transform: scale(.6); transition: all .15s ease;
+}
+.pack.is-on .pack__tick { opacity: 1; transform: scale(1); }
+
+/* برچسب تخفیف و قیمت خط‌خورده */
+.pack__off {
+  position: absolute; inset-block-start: -8px; inset-inline-start: 9px;
+  padding: 2px 7px; border-radius: 99px;
+  background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 800;
+}
+.pack__was {
+  margin-top: 6px; font-size: 11px; color: var(--text-faint);
+  text-decoration: line-through; font-variant-numeric: tabular-nums;
+}
+.pack__was + .pack__price { margin-top: 2px; }
+
+/* ---------- ۲۲.۹) تقویم شمسی ---------- */
+.cal {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); padding: 12px;
+}
+.cal__bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cal__title { font-size: 13.5px; font-weight: 700; }
+.cal__nav {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: var(--surface-2); color: var(--text);
+  display: grid; place-items: center;
+}
+.cal__nav[disabled] { opacity: .35; pointer-events: none; }
+
+.cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal__grid--head { margin-bottom: 4px; }
+.cal__wd {
+  text-align: center; font-size: 10.5px; font-weight: 700;
+  color: var(--text-faint); padding-bottom: 2px;
+}
+.cal__day {
+  aspect-ratio: 1; border-radius: 10px;
+  display: grid; place-items: center;
+  font-size: 12.5px; font-weight: 600; color: var(--text);
+  font-variant-numeric: tabular-nums;
+  transition: background .12s ease;
+}
+.cal__day:not([disabled]):active { background: var(--surface-3); }
+.cal__day[disabled] { color: var(--text-faint); opacity: .4; pointer-events: none; }
+.cal__day.is-on { background: var(--brand); color: #fff; font-weight: 800; }
+
+.cal__note {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 11px; padding-top: 10px; border-top: 1px dashed var(--border);
+  font-size: 11.5px; color: var(--text-dim);
+}
+
+/* ---------- ۲۲.۸) پرداخت کارت‌به‌کارت ---------- */
+.pay__row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 12px; border-bottom: 1px dashed var(--border);
+}
+.pay__lbl { font-size: 12.5px; color: var(--text-dim); }
+.pay__amount {
+  font-size: 16px; font-weight: 800; color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+.pay__card {
+  margin-top: 12px; padding: 14px;
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  text-align: center;
+}
+.pay__num { font-size: 18px; font-weight: 800; letter-spacing: 2px; }
+.pay__holder { font-size: 12.5px; margin-top: 6px; }
+.pay__bank { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+
+.pay__steps { margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+.pay__step {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 12px; color: var(--text-dim); line-height: 1.7;
+}
+.pay__n {
+  width: 19px; height: 19px; flex: 0 0 auto; margin-top: 1px;
+  border-radius: 50%; background: var(--brand-soft); color: var(--brand);
+  display: grid; place-items: center; font-size: 10.5px; font-weight: 800;
+}
 
 /* ---------- ۲۳) کمکی‌ها ---------- */
 .mt-8  { margin-top: 8px; }
@@ -709,3 +990,154 @@ ul { margin: 0; padding: 0; list-style: none; }
 .nums { font-variant-numeric: tabular-nums; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 [hidden] { display: none !important; }
+
+/* ---------- ۲۲.۳) تأیید کانال‌های هدف ---------- */
+.chanlist:empty { display: none; }
+.chanlist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chanpill {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 100%; padding: 4px 9px 4px 4px;
+  border: 1px solid var(--border); border-radius: 99px;
+  background: var(--surface-2);
+  font-size: 11.5px; font-weight: 600;
+}
+.chanpill .chatchip__ava { width: 20px; height: 20px; font-size: 10px; }
+.chanpill__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+.chanpill__tick { display: inline-flex; flex: 0 0 auto; }
+.chanpill.is-ok    { border-color: var(--success); color: var(--success); }
+.chanpill.is-miss  { border-color: var(--warn);    color: var(--warn); }
+.chanpill.is-wait  { color: var(--text-dim); opacity: .7; }
+
+/* ---------- ۲۲.۴) پنل مدیریت ---------- */
+.segs {
+  display: flex; gap: 6px; padding: 4px;
+  background: var(--surface-2); border-radius: var(--radius-sm);
+}
+.seg {
+  flex: 1; padding: 9px 8px; border-radius: 10px;
+  font-size: 12.5px; font-weight: 700; color: var(--text-dim);
+  transition: background .15s ease, color .15s ease;
+}
+.seg.is-on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+/* ---------- ۲۴) پنل مدیریت روی صفحهٔ بزرگ ----------
+   پنل همان کد مینی‌اپ را دارد و برای گوشی چیده شده. وقتی روی لپ‌تاپ
+   باز می‌شود، ماندن در یک ستون ۵۲۰ پیکسلی وسط یک صفحهٔ پهن، هم زشت
+   است و هم کار را کند می‌کند. از این عرض به بالا، فضا را می‌گیرد. */
+@media (min-width: 900px) {
+  body.is-panel .app { max-width: 1080px; }
+  body.is-panel .screen { padding: 18px 24px 40px; }
+
+  /* فهرست سفارش‌ها و مشتری‌ها دو ستونه می‌شود */
+  body.is-panel #list {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px; align-items: start;
+  }
+  body.is-panel #list > .card { margin-top: 0; }
+
+  /* نوار پایین روی دسکتاپ باریک‌تر و چسبیده به وسط */
+  body.is-panel .tabbar { max-width: 1080px; }
+
+  /* کارت‌های جزئیات لازم نیست کل عرض را بگیرند */
+  body.is-panel .card { max-width: 100%; }
+}
+
+/* ---------- ۲۵) پوستر تبلیغ ---------- */
+.poster { display: block; width: 100%; }
+
+.poster--empty {
+  border: 1.5px dashed var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 22px 14px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  aspect-ratio: 16 / 9; justify-content: center;
+  transition: border-color .15s ease;
+}
+.poster--empty:active { border-color: var(--brand); }
+.poster__ico {
+  width: 38px; height: 38px; border-radius: 12px; margin-bottom: 4px;
+  background: var(--brand-soft); color: var(--brand);
+  display: grid; place-items: center;
+}
+.poster__t { font-size: 13.5px; font-weight: 700; color: var(--text); }
+.poster__d { font-size: 11.5px; color: var(--text-dim); }
+
+.poster__img {
+  width: 100%; aspect-ratio: 16 / 9; object-fit: cover;
+  border-radius: var(--radius-sm); display: block;
+  border: 1px solid var(--border);
+}
+
+/* پوستر داخل پیش‌نمایش تلگرام — بالای متن، مثل خود تلگرام */
+.tgad__poster {
+  width: 100%; aspect-ratio: 16 / 9; object-fit: cover;
+  border-radius: 8px; display: block; margin: 6px 0 8px;
+}
+
+/* ---------- ۲۶) کارت بانکی و رسید ---------- */
+.bankcard {
+  position: relative; overflow: hidden;
+  border-radius: 20px; padding: 16px 16px 14px;
+  background: var(--brand-grad);
+  color: #fff;
+  box-shadow: 0 14px 34px var(--brand-glow);
+}
+.bankcard::after {
+  content: ""; position: absolute; inset: auto -50px -80px auto;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(255, 255, 255, .10);
+}
+.bankcard > * { position: relative; z-index: 2; }
+
+.bankcard__top { display: flex; align-items: center; justify-content: space-between; }
+.bankcard__bank { font-size: 12.5px; font-weight: 700; opacity: .95; }
+.bankcard__chip {
+  width: 30px; height: 22px; border-radius: 6px;
+  background: linear-gradient(135deg, #f5d78a, #d8a94b);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
+}
+
+.bankcard__num {
+  width: 100%; margin: 16px 0 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  color: #fff; text-align: start;
+}
+.bankcard__digits {
+  font-size: 19px; font-weight: 700; letter-spacing: 1.6px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* شبا ۲۶ کاراکتر است و در یک خط جا نمی‌شود؛ کوچک‌تر و دو خطی */
+.bankcard__digits--long {
+  font-size: 14.5px; letter-spacing: .6px;
+  white-space: normal; line-height: 1.55;
+}
+
+.bankcard__copy {
+  width: 32px; height: 32px; flex: 0 0 auto;
+  border-radius: 10px; background: rgba(255, 255, 255, .18);
+  display: grid; place-items: center;
+}
+.bankcard__num:active .bankcard__copy { background: rgba(255, 255, 255, .34); }
+
+.bankcard__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.bankcard__cell { min-width: 0; text-align: start; color: #fff; }
+.bankcard__cell--btn { display: block; }
+.bankcard__cap {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10.5px; opacity: .8; margin-bottom: 2px;
+}
+.bankcard__val {
+  font-size: 13.5px; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* کادر انتخاب رسید — کوتاه‌تر از کادر پوستر، چون نسبت مهم نیست */
+.poster--slim { aspect-ratio: auto; padding: 18px 14px; }
+
+.receipt-done {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 11px 12px; border-radius: var(--radius-sm);
+  background: var(--success-soft); color: var(--success);
+  font-size: 12px; font-weight: 600; line-height: 1.7;
+}

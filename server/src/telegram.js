@@ -6,15 +6,19 @@
 
 import { config } from "./config.js";
 
-const api = (method) => `${config.botApiBase}/bot${config.botToken}/${method}`;
+/* `bot` مشخص می‌کند پیام از کدام ربات برود: "main" (پیش‌فرض) یا "crm".
+   پنل مدیریت روی ربات دوم باز می‌شود، پس فایل خروجی هم باید از همان
+   ربات بیاید — وگرنه در چتی می‌افتد که مدیر بازش نکرده است. */
+const tokenOf = (bot) => (bot === "crm" && config.crmBotToken ? config.crmBotToken : config.botToken);
+const api = (method, bot) => `${config.botApiBase}/bot${tokenOf(bot)}/${method}`;
 
 /** فراخوانی یک متد از API تلگرام */
-export async function call(method, payload = {}, { timeoutMs = 60000 } = {}) {
+export async function call(method, payload = {}, { timeoutMs = 60000, bot } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
   try {
-    const res = await fetch(api(method), {
+    const res = await fetch(api(method, bot), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -92,6 +96,16 @@ export function webAppButton(text = "باز کردن پنل تبلیغات") {
   return { inline_keyboard: [[{ text, web_app: { url: config.webappUrl } }]] };
 }
 
+/** دکمه‌ای که زیر یک پیام می‌آید و یک آدرس (چت پشتیبانی، کانال و…) را باز می‌کند */
+export function urlButton(text, url) {
+  return { inline_keyboard: [[{ text, url }]] };
+}
+
+/* آیدی عمومی پشتیبانی و کانال — رمز یا اطلاعات حساس نیستند، همین
+   آیدی پشتیبانی همان چیزی است که خود مینی‌اپ هم نشان می‌دهد */
+export const SUPPORT_USERNAME = "likaadvertise_crm";
+export const CHANNEL_USERNAME = "likaads_channel";
+
 /**
  * صفحه‌کلید همیشگی زیر کادر تایپ.
  * این همان «گزینه‌های» بزرگی است که کاربر همیشه جلوی چشمش دارد.
@@ -99,14 +113,15 @@ export function webAppButton(text = "باز کردن پنل تبلیغات") {
 export const MENU = {
   panel: "ورود به پنل تبلیغات",
   orders: "سفارش‌های من",
-  support: "پشتیبانی"
+  support: "ارتباط با پشتیبانی",
+  channel: "کانال ما"
 };
 
 export function mainKeyboard() {
   return {
     keyboard: [
       [{ text: MENU.panel, web_app: { url: config.webappUrl } }],
-      [{ text: MENU.orders }, { text: MENU.support }]
+      [{ text: MENU.support }, { text: MENU.channel }]
     ],
     resize_keyboard: true,
     is_persistent: true
@@ -137,4 +152,66 @@ export async function setupBot() {
   });
 
   return me;
+}
+
+/**
+ * فرستادن یک فایل به چت تلگرام.
+ *
+ * چرا این و نه دانلود در مرورگر؟ مینی‌اپ داخل مرورگرِ خودِ تلگرام باز
+ * می‌شود و آنجا دانلود فایل معمولاً کار نمی‌کند. ولی فایلی که ربات
+ * می‌فرستد، مثل هر پیوست دیگری در چت می‌نشیند و با اکسل یا گوگل‌شیت
+ * باز می‌شود.
+ */
+export async function sendDocument(chatId, filename, content, caption = "", bot) {
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  if (caption) form.append("caption", caption);
+  form.append("document", new Blob([content], { type: "text/csv" }), filename);
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 60000);
+  try {
+    const res = await fetch(api("sendDocument", bot), {
+      method: "POST", body: form, signal: ctrl.signal
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data.ok) {
+      throw new Error(`Telegram API «sendDocument» failed: ${data.description || res.status}`);
+    }
+    return data.result;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * فرستادن عکس به یک چت.
+ * @returns شناسهٔ فایل در تلگرام (file_id) — با همین می‌شود بعداً
+ *          دوباره فرستادش یا نشانش داد، بدون اینکه ما جایی ذخیره‌اش کنیم.
+ */
+export async function sendPhoto(chatId, bytes, caption = "", bot) {
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  // کپشن متن ساده است، پس parse_mode نمی‌گذاریم — وگرنه یک < در نام
+  // برند می‌تواند کل درخواست را رد کند
+  if (caption) form.append("caption", caption.slice(0, 1000));
+  form.append("photo", new Blob([bytes], { type: "image/jpeg" }), "poster.jpg");
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 60000);
+  try {
+    const res = await fetch(api("sendPhoto", bot), {
+      method: "POST", body: form, signal: ctrl.signal
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data.ok) {
+      throw new Error(`Telegram API «sendPhoto» failed: ${data.description || res.status}`);
+    }
+    /* تلگرام چند اندازه برمی‌گرداند؛ بزرگ‌ترین را نگه می‌داریم */
+    const sizes = data.result?.photo || [];
+    const biggest = sizes[sizes.length - 1];
+    return biggest?.file_id || "";
+  } finally {
+    clearTimeout(timer);
+  }
 }

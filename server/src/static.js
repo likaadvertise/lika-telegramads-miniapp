@@ -31,6 +31,8 @@ export function serveStatic(req, res, url) {
 
   let rel = decodeURIComponent(url.pathname);
   if (rel === "/" || rel === "") rel = "/index.html";
+  // پنل مدیریت یک مینی‌اپ جداست: /admin
+  if (rel === "/admin" || rel === "/admin/") rel = "/admin/index.html";
 
   // جلوگیری از خروج از پوشهٔ web
   const target = path.join(WEB_DIR, path.normalize(rel).replace(/^(\.\.[/\\])+/, ""));

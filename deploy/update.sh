@@ -13,16 +13,26 @@ set -euo pipefail
 APP_DIR="/opt/lika-ads"
 SERVICE="lika-ads"
 SVC_USER="lika"
+CRED_FILE="/etc/lika-ads/git-credentials"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "این اسکریپت باید با کاربر root اجرا شود:  sudo bash update.sh"
   exit 1
 fi
 
+if [[ ! -f "${CRED_FILE}" ]]; then
+  echo "✖ توکن گیت‌هاب پیدا نشد (${CRED_FILE})."
+  echo "  یعنی نصب اولیه ناقص بوده. دوباره setup.sh را اجرا کنید."
+  exit 1
+fi
+
 echo "گرفتن آخرین تغییرات…"
-git -C "${APP_DIR}" -c safe.directory="${APP_DIR}" pull --ff-only
+git -C "${APP_DIR}" -c safe.directory="${APP_DIR}" \
+    -c credential.helper="store --file=${CRED_FILE}" pull --ff-only
 
 chown -R "${SVC_USER}:${SVC_USER}" "${APP_DIR}"
+chown -R root:root "${APP_DIR}/.git"
+chmod -R go-rwx "${APP_DIR}/.git"
 
 echo "راه‌اندازی مجدد سرویس…"
 systemctl restart "${SERVICE}"

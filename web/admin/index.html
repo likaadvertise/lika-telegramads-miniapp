@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <title>Lika CRM</title>
+  <meta name="color-scheme" content="light dark" />
+
+  <!--
+    پل تلگرام — همان فایل محلی مینی‌اپ مشتری.
+    چرا محلی و نه از telegram.org؟ چون آن دامنه در ایران باز نمی‌شود و
+    اگر اسکریپت بارگذاری نشود، اپ اصلاً نمی‌فهمد چه کسی واردش شده.
+  -->
+  <script src="/assets/js/tg-webapp.js?v=65"></script>
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=65" />
+  <link rel="stylesheet" href="/assets/css/app.css?v=65" />
+</head>
+<body class="is-panel">
+  <div class="app">
+    <header class="appbar" id="appbar"></header>
+    <main class="screen" id="screen"></main>
+    <nav class="tabbar" id="tabbar"></nav>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="/assets/js/icons.js?v=65"></script>
+  <script src="/assets/js/config.js?v=65"></script>
+  <script src="/admin/assets/js/crm.js?v=65"></script>
+</body>
+</html>

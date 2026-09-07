@@ -1,0 +1,8 @@
+# چیزهایی که لازم نیست روی Vercel آپلود شوند
+tests/
+deploy/
+server/data/
+*.db
+*.db-wal
+*.db-shm
+tools/

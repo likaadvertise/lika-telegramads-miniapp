@@ -38,7 +38,12 @@ window.Icons = (function () {
     folder: '<path d="M3.5 7.5a2 2 0 0 1 2-2h3.3l2 2.5h7.7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
     help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.5a2.4 2.4 0 1 1 3.2 2.3c-.6.2-.9.8-.9 1.4v.4"/><path d="M12 16.8v.1"/>',
     close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
-    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>'
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+    /* دو فلش چرخشی — «همین کمپین را دوباره بساز» */
+    repeat: '<path d="M4 11a8 8 0 0 1 13.7-5.6L20 7.5"/><path d="M20 3.5v4h-4"/><path d="M20 13a8 8 0 0 1-13.7 5.6L4 16.5"/><path d="M4 20.5v-4h4"/>',
+    /* برگهٔ نیمه‌نوشته — یادآوری پیش‌نویس */
+    draft: '<path d="M13 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 12h4"/><path d="M9 16h3"/><path d="M16.5 3.2 20.8 7.5l-4.6 4.6h-4.3V7.8z"/>'
   };
 
   function icon(name, size) {

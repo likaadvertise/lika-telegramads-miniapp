@@ -110,3 +110,30 @@ export async function getChatPhoto(input) {
     return miss;
   }
 }
+
+/**
+ * گرفتن یک فایل از تلگرام با شناسه‌اش.
+ * برای نشان دادن پوستر سفارش در پنل مدیریت — فایل پیش تلگرام است،
+ * ما فقط شناسه‌اش را ذخیره کرده‌ایم.
+ */
+export async function getTelegramFile(fileId) {
+  const id = String(fileId || "").trim();
+  if (!id || !/^[A-Za-z0-9_-]{10,200}$/.test(id)) return { ok: false };
+
+  try {
+    const file = await call("getFile", { file_id: id });
+    const url = `${config.botApiBase}/file/bot${config.botToken}/${file.file_path}`;
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+
+    return {
+      ok: true,
+      body: Buffer.from(await res.arrayBuffer()),
+      contentType: res.headers.get("content-type") || "image/jpeg"
+    };
+  } catch (err) {
+    console.error("[poster] گرفته نشد:", err.message);
+    return { ok: false };
+  }
+}

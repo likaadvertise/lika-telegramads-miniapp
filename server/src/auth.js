@@ -13,12 +13,22 @@ import { config } from "./config.js";
 /* حداکثر عمر مجاز initData: ۲۴ ساعت */
 const MAX_AGE_SECONDS = 24 * 60 * 60;
 
-let cachedSecret = null;
-function secretKey() {
-  if (!cachedSecret) {
-    cachedSecret = crypto.createHmac("sha256", "WebAppData").update(config.botToken).digest();
+/* پنل مدیریت روی ربات دوم باز می‌شود، و تلگرام امضای initData را با
+   توکنِ همان رباتی می‌زند که مینی‌اپ از آن باز شده. پس باید هر دو
+   کلید را بشناسیم، وگرنه مدیر با خطای ۴۰۱ پشت در می‌ماند.
+
+   امنیت کم نمی‌شود: هر دو کلید متعلق به خودمان‌اند و ساختن امضای
+   معتبر بدون داشتن توکن ممکن نیست. */
+let cachedSecrets = null;
+function secretKeys() {
+  if (!cachedSecrets) {
+    const tokens = [config.botToken, config.crmBotToken].filter(Boolean);
+    cachedSecrets = tokens.map((t) => ({
+      bot: t === config.botToken ? "main" : "crm",
+      key: crypto.createHmac("sha256", "WebAppData").update(t).digest()
+    }));
   }
-  return cachedSecret;
+  return cachedSecrets;
 }
 
 /**
@@ -40,18 +50,43 @@ export function verifyInitData(initData) {
   const hash = params.get("hash");
   if (!hash) return { ok: false, reason: "امضای initData وجود ندارد." };
 
-  const checkString = [...params.entries()]
-    .filter(([key]) => key !== "hash" && key !== "signature")
-    .map(([key, value]) => `${key}=${value}`)
-    .sort()
-    .join("\n");
+  /*
+     رشته‌ای که تلگرام رویش امضا زده است.
 
-  const computed = crypto.createHmac("sha256", secretKey()).update(checkString).digest("hex");
+     تلگرام در نسخه‌های تازه فیلد signature را هم اضافه کرده و اینکه
+     این فیلد در محاسبهٔ امضا حساب شود یا نه، بین نسخه‌های کلاینت
+     یکسان نیست. پس هر دو حالت را امتحان می‌کنیم.
 
-  const a = Buffer.from(computed, "hex");
-  const b = Buffer.from(hash, "hex");
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    return { ok: false, reason: "امضای initData معتبر نیست." };
+     این کار امنیت را کم نمی‌کند: ساختن هر کدام از این دو امضا بدون
+     داشتن توکن ربات ممکن نیست.
+  */
+  const fields = [...params.entries()].filter(([key]) => key !== "hash");
+
+  const candidates = [
+    fields.filter(([key]) => key !== "signature"),
+    fields
+  ];
+
+  let signedBy = null;
+  for (const set of candidates) {
+    const checkString = set
+      .map(([key, value]) => `${key}=${value}`)
+      .sort()
+      .join("\n");
+
+    for (const { bot, key } of secretKeys()) {
+      const computed = crypto.createHmac("sha256", key).update(checkString).digest("hex");
+      const a = Buffer.from(computed, "hex");
+      const b = Buffer.from(hash, "hex");
+      if (a.length === b.length && crypto.timingSafeEqual(a, b)) { signedBy = bot; break; }
+    }
+    if (signedBy) break;
+  }
+
+  if (!signedBy) {
+    // نام فیلدها (نه مقدارشان) برای عیب‌یابی؛ هیچ‌کدام محرمانه نیستند
+    const names = fields.map(([key]) => key).sort().join("، ");
+    return { ok: false, reason: `امضای initData معتبر نیست. فیلدهای دریافتی: ${names}.` };
   }
 
   const authDate = Number(params.get("auth_date") || 0);
@@ -70,7 +105,7 @@ export function verifyInitData(initData) {
   }
   if (!user || !user.id) return { ok: false, reason: "اطلاعات کاربر در initData نیست." };
 
-  return { ok: true, user, authDate };
+  return { ok: true, user, authDate, bot: signedBy };
 }
 
 /* =========================================================

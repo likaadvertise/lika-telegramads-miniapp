@@ -21,21 +21,29 @@ window.Store = (function () {
   /* ---------- وضعیت‌های ممکن یک کمپین ---------- */
   const STATUS = {
     pending:  { label: "در انتظار بررسی", cls: "pending",  order: 1 },
-    review:   { label: "در حال بررسی",    cls: "review",   order: 2 },
-    approved: { label: "تأیید شده",       cls: "approved", order: 3 },
-    running:  { label: "در حال اجرا",     cls: "running",  order: 4 },
-    done:     { label: "پایان‌یافته",      cls: "done",     order: 5 },
-    rejected: { label: "نیاز به اصلاح",   cls: "rejected", order: 6 }
+    approved: { label: "تأیید شده",       cls: "approved", order: 2 },
+    running:  { label: "در حال اجرا",     cls: "running",  order: 3 },
+    done:     { label: "پایان‌یافته",      cls: "done",     order: 4 },
+    rejected: { label: "نیاز به اصلاح",   cls: "rejected", order: 5 }
   };
 
   /* ---------- مسیر پیشرفت یک کمپین (برای تایم‌لاین) ---------- */
-  const FLOW = ["pending", "review", "approved", "running", "done"];
+  const FLOW = ["pending", "approved", "running", "done"];
 
   // ترتیب همین‌جا تعیین می‌شود؛ به همین ترتیب در فرم نمایش داده می‌شود
+  /* هر نوع تبلیغ چه چیزهایی لازم دارد.
+     این از روی فرم واقعی Telegram Ads درآمده، نه از حدس:
+       • تب Channels  → عنوان + متن + لینک + کانال‌های هدف
+       • تب Search    → عنوان + لینک + کلیدواژه‌ها   (کادر «متن تبلیغ» اصلاً ندارد)
+       • تب Bots      → هنوز ندیده‌ایم؛ فعلاً مثل کانال فرض شده
+  */
   const TARGET_TYPES = {
-    channel: { label: "کانال",  icon: "megaphone", desc: "مخاطب وارد کانال شما می‌شود" },
-    search:  { label: "جستجو",  icon: "search",    desc: "تبلیغ شما در نتایج جستجوی تلگرام دیده می‌شود" },
-    bot:     { label: "ربات",   icon: "bot",       desc: "مخاطب ربات شما را استارت می‌کند" }
+    channel: { label: "کانال",  icon: "megaphone", desc: "مخاطب وارد کانال شما می‌شود",
+               needsText: true,  needsKeywords: false },
+    search:  { label: "جستجو",  icon: "search",    desc: "تبلیغ شما در نتایج جستجوی تلگرام دیده می‌شود",
+               needsText: false, needsKeywords: true },
+    bot:     { label: "ربات",   icon: "bot",       desc: "مخاطب ربات شما را استارت می‌کند",
+               needsText: true,  needsKeywords: false }
   };
 
   /* =======================================================
@@ -45,18 +53,51 @@ window.Store = (function () {
   const DEMO_CODE = "12345";   // کد ثابت حالت نمایشی
 
   let mode = "demo";        // "online" یا "demo"
+  let demoReason = "";      // اگر نمایشی شد، چرا؟ (برای عیب‌یابی)
+  let step = "health";      // آخرین مرحله‌ای که تلاش شد
   let cache = [];           // کمپین‌ها در حافظه، برای نمایش سریع
   let profile = emptyProfile();
   let requireCode = true;
+  let admin = false;
+
+  /* بسته‌ها و شمارهٔ کارت را سرور می‌گوید. مقدار داخل config.js فقط
+     برای حالت نمایشی است؛ قیمت واقعی همیشه از سرور می‌آید. */
+  let packages = null;
+  let payment = null;
 
   function emptyProfile() {
-    return { phone: "", firstName: "", lastName: "", phoneVerified: false, registered: false };
+    return { phone: "", firstName: "", lastName: "", email: "", phoneVerified: false, registered: false };
   }
 
   const apiBase = () => (window.LIKA_CONFIG.apiBase || "").replace(/\/+$/, "");
 
   function initData() {
     try { return (window.Telegram?.WebApp?.initData) || ""; } catch (e) { return ""; }
+  }
+
+  /*
+     وقتی امضا خالی است، «حالت نمایشی» تنها چیزی است که کاربر می‌بیند —
+     برای عیب‌یابی از راه دور (بدون دسترسی به گوشی کاربر) باید همان یک
+     خط، تا حد ممکن دقیق بگوید مشکل کجاست:
+
+       ۱) window.Telegram.WebApp اصلاً نساخته شده  → خود tg-webapp.js
+          بارگذاری نشده (کش خیلی قدیمی، یا مشکل شبکه در گرفتن فایل).
+       ۲) ساخته شده ولی حتی پلتفرم/نسخه هم ندارد     → تلگرام اصلاً چیزی
+          به آدرس اضافه نکرده؛ یعنی این بار از یک لینک معمولی باز شده
+          (نه از دکمهٔ Web App رسمی ربات).
+       ۳) ساخته شده و پلتفرم/نسخه دارد ولی initData خالی است → تلگرام
+          واقعاً یک Web App باز کرده ولی امضا را نفرستاده — نادر است،
+          معمولاً یعنی نسخهٔ تلگرام خیلی قدیمی یا یک کش عجیب داخل اپ تلگرام.
+  */
+  function diagnoseNoSignature() {
+    const w = window.Telegram && window.Telegram.WebApp;
+    if (!w) return "پل تلگرام بارگذاری نشد";
+
+    const hasLaunchInfo = Boolean(w.platform && w.platform !== "unknown");
+    if (!hasLaunchInfo) {
+      return "این بار به‌جای دکمهٔ رسمی «Web App» تلگرام، از یک لینک معمولی باز شده (آدرس هیچ اطلاعاتی از تلگرام نداشت).";
+    }
+    return `امضای تلگرام خالی است (پلتفرم: ${w.platform}، نسخه: ${w.version || "?"})`;
   }
 
   async function apiFetch(path, options = {}) {
@@ -73,7 +114,9 @@ window.Store = (function () {
     try { data = await res.json(); } catch (e) {}
 
     if (!res.ok || data.ok === false) {
-      const err = new Error(data.error || "ارتباط با سرور برقرار نشد.");
+      // اگر سرور خودش دلیلی نگفت، دست‌کم کد وضعیت را نشان بده —
+      // وگرنه «ارتباط برقرار نشد» هیچ سرنخی برای عیب‌یابی نمی‌دهد
+      const err = new Error(data.error || `ارتباط با سرور برقرار نشد (${res.status}).`);
       err.status = res.status;
       throw err;
     }
@@ -86,6 +129,7 @@ window.Store = (function () {
   async function init() {
     // بدون امضای تلگرام سرور ما را نمی‌شناسد؛ پس حالت نمایشی
     if (!initData()) {
+      demoReason = diagnoseNoSignature();
       startDemo();
       return mode;
     }
@@ -93,20 +137,29 @@ window.Store = (function () {
     try {
       const timeout = AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined;
       const health = await fetch(apiBase() + "/api/health", { signal: timeout });
-      if (!health.ok) throw new Error("سرور در دسترس نیست");
+      if (!health.ok) throw new Error(`سلامت سرور ${health.status}`);
 
+      step = "me";
       const me = await apiFetch("/api/me");
       profile = me.profile || emptyProfile();
       requireCode = me.requireCode !== false;
+      admin = me.isAdmin === true;
+      if (Array.isArray(me.packages)) packages = me.packages;
+      if (me.payment) payment = me.payment;
 
       // یک نسخه محلی نگه می‌داریم تا اگر سرور لحظه‌ای در دسترس نبود،
       // از کاربری که قبلاً ثبت‌نام کرده دوباره ثبت‌نام نخواهیم
       saveLocalProfile(profile);
 
+      step = "campaigns";
       const data = await apiFetch("/api/campaigns");
       cache = data.campaigns || [];
       mode = "online";
+      demoReason = "";
     } catch (e) {
+      // پیام خود سرور را هم می‌آوریم؛ کد وضعیت به‌تنهایی نمی‌گوید کدام بررسی رد شده
+      demoReason = [step, e.status ? "خطای " + e.status : "", e.message || ""]
+        .filter(Boolean).join(" — ");
       startDemo();
     }
     return mode;
@@ -145,11 +198,13 @@ window.Store = (function () {
     return {
       total: all.length,
       active: all.filter((c) => ["approved", "running"].includes(c.status)).length,
-      waiting: all.filter((c) => ["pending", "review"].includes(c.status)).length,
-      spend: all
+      waiting: all.filter((c) => c.status === "pending").length,
+      spendToman: all
         .filter((c) => ["running", "done"].includes(c.status))
-        .reduce((s, c) => s + (c.budget?.amountUsd || 0), 0),
-      views: all.reduce((s, c) => s + (c.stats?.views || 0), 0)
+        .reduce((s, c) => s + (c.budget?.priceToman || 0), 0),
+      views: all.reduce((s, c) => s + (c.stats?.views || 0), 0),
+      clicks: all.reduce((s, c) => s + (c.stats?.clicks || 0), 0),
+      joins: all.reduce((s, c) => s + (c.stats?.joins || 0), 0)
     };
   }
 
@@ -242,12 +297,12 @@ window.Store = (function () {
     return profile;
   }
 
-  /** گام ۳ — نام و نام خانوادگی */
-  async function saveProfile(firstName, lastName) {
+  /** گام ۳ — نام، نام خانوادگی و ایمیل (اختیاری) */
+  async function saveProfile(firstName, lastName, email) {
     if (mode === "online") {
       const data = await apiFetch("/api/register/profile", {
         method: "POST",
-        body: JSON.stringify({ firstName, lastName })
+        body: JSON.stringify({ firstName, lastName, email })
       });
       profile = data.profile || profile;
       saveLocalProfile(profile);
@@ -257,6 +312,7 @@ window.Store = (function () {
     const p = localProfile();
     p.firstName = firstName;
     p.lastName = lastName;
+    p.email = email || "";
     p.registered = true;
     saveLocalProfile(p);
     profile = p;
@@ -336,12 +392,41 @@ window.Store = (function () {
     return localRead().campaigns;
   }
 
-  /* ---------- پیش‌نویس (اگر کاربر نیمه‌کاره خارج شد) ---------- */
-  function saveDraft(draft) {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) {}
+  /* ---------- پیش‌نویس (اگر کاربر نیمه‌کاره خارج شد) ----------
+     کنار خودِ دادهٔ فرم، دو چیز دیگر هم نگه می‌داریم:
+       • step    — کاربر تا کدام مرحله رفته بود
+       • savedAt — آخرین بار کِی چیزی نوشت
+     صفحهٔ خانه با همین دو تا می‌گوید «پیش‌نویس مرحلهٔ ۲، ۳ ساعت پیش».
+     پیش‌نویس‌های نسخهٔ قبلی که فقط خود داده بودند هم خوانده می‌شوند. */
+  function saveDraft(data, meta) {
+    const payload = Object.assign({ step: 1 }, meta || {}, {
+      data,
+      savedAt: new Date().toISOString()
+    });
+
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      return;
+    } catch (e) { /* پایین دوباره تلاش می‌کنیم */ }
+
+    /* معمولاً یعنی حافظهٔ مرورگر پر شده و مقصر پوستر است (عکس‌ها بزرگ‌اند).
+       متن سفارش را از دست نمی‌دهیم؛ فقط عکس را از پیش‌نویس درمی‌آوریم.
+       خودِ فرمِ باز هنوز عکس را دارد — این فقط نسخهٔ ذخیره‌شده است. */
+    try {
+      const light = JSON.parse(JSON.stringify(payload));
+      if (light.data && light.data.creative) light.data.creative.poster = "";
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(light));
+    } catch (e) {}
   }
+
   function loadDraft() {
-    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { return null; }
+    try {
+      const raw = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (!raw || typeof raw !== "object") return null;
+      // نسخهٔ قدیمی: خودِ دادهٔ فرم، بدون پوشش
+      if (!raw.data) return { data: raw, step: 1, savedAt: "" };
+      return { data: raw.data, step: Number(raw.step) || 1, savedAt: raw.savedAt || "" };
+    } catch (e) { return null; }
   }
   function clearDraft() {
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
@@ -363,6 +448,7 @@ window.Store = (function () {
         createdAt: daysAgo(2),
         status: "running",
         isSample: true,
+        adTitle: "کمپین فروش پاییز",
         target: { type: "channel", url: "@lika_shop", brand: "لیکا شاپ" },
         creative: { text: "فروش ویژه لوازم جانبی موبایل با ۳۰٪ تخفیف — همین حالا کانال ما را ببینید." },
         targeting: { countries: ["IR", "AE"], languages: ["فارسی"], topics: ["shopping", "tech"], channels: [] },
@@ -371,7 +457,6 @@ window.Store = (function () {
         stats: { views: 41250, clicks: 903 },
         history: [
           { status: "pending", at: daysAgo(2) },
-          { status: "review", at: daysAgo(2) },
           { status: "approved", at: daysAgo(1) },
           { status: "running", at: daysAgo(1) }
         ]
@@ -381,6 +466,7 @@ window.Store = (function () {
         createdAt: daysAgo(0),
         status: "pending",
         isSample: true,
+        adTitle: "جذب مخاطب ربات مشاوره",
         target: { type: "bot", url: "@lika_support_bot", brand: "ربات مشاوره لیکا" },
         creative: { text: "مشاورهٔ رایگان سرمایه‌گذاری برای شروع‌کننده‌ها — همین حالا با ربات ما گفت‌وگو کنید." },
         targeting: { countries: ["IR"], languages: ["فارسی"], topics: ["finance", "education"], channels: ["@digikala_jobs"] },
@@ -406,7 +492,40 @@ window.Store = (function () {
     get mode() { return mode; },
     get profile() { return profile; },
     get requireCode() { return requireCode; },
+    isAdmin: () => admin,
+    adminUsers: () => apiFetch("/api/admin/users"),
+    adminCampaigns: () => apiFetch("/api/admin/campaigns"),
+    adminExport: () => apiFetch("/api/admin/export", { method: "POST", body: "{}" }),
     isOnline: () => mode === "online",
+
+    /** بسته‌های یک نوع تبلیغ — اگر خالی برگردد یعنی آن نوع بسته ندارد */
+    packagesFor(type) {
+      const list = packages || window.LIKA_CONFIG.packages || [];
+      return list.filter((p) => p.type === type);
+    },
+    findPackage(id) {
+      const list = packages || window.LIKA_CONFIG.packages || [];
+      return list.find((p) => p.id === id) || null;
+    },
+    payment: () => payment || window.LIKA_CONFIG.payment || { cardNumber: "", cardHolder: "", bank: "" },
+
+    /** رسید پرداخت را برای تیم می‌فرستد و سفارش به‌روزشده را برمی‌گرداند */
+    async sendReceipt(code, dataUrl) {
+      if (mode !== "online") {
+        throw new Error("در حالت نمایشی رسید فرستاده نمی‌شود.");
+      }
+      const data = await apiFetch("/api/receipt", {
+        method: "POST",
+        body: JSON.stringify({ code, image: dataUrl })
+      });
+      // نسخهٔ حافظه را هم تازه می‌کنیم تا صفحه بدون رفرش درست شود
+      const i = cache.findIndex((c) => c.id === code);
+      if (i !== -1 && data.campaign) cache[i] = data.campaign;
+      return data.campaign;
+    },
+
+
+    demoReason: () => demoReason,
     isRegistered: () => Boolean(profile.registered),
     isPhoneVerified: () => Boolean(profile.phoneVerified),
     registerPhone, verifyCode, saveProfile, lookupChat,
